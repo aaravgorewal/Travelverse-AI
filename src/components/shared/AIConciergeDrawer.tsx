@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
 import { useI18nStore } from "../../stores/useI18nStore";
-import { aiService } from "../../services";
+import { aiService, analyticsService } from "../../services";
 import { Button, Badge, AISkeletonLoader } from "../ui";
 
 type AgentPersona = "concierge" | "flight_scout" | "foodie" | "luxury_host" | "budget_hacker" | "visa_guide";
@@ -191,6 +191,7 @@ export const AIConciergeDrawer: React.FC = () => {
     setInputMessage("");
     setIsLoading(true);
     setVoiceState("processing");
+    analyticsService.trackEvent("ai_prompt_sent", { messageLength: textToSend.length, activePersona });
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));

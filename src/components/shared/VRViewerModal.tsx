@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Volume2, VolumeX, Compass, Sparkles, MapPin, Eye } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
-import { aiService } from "../../services";
+import { aiService, analyticsService } from "../../services";
 import { Button, Badge } from "../ui";
 import { useToast } from "../ui/Toast";
 import { ReactPhotoSphereViewer } from "react-photo-sphere-viewer";
@@ -23,6 +23,7 @@ export const VRViewerModal: React.FC = () => {
     if (activeVRScene) {
       setActiveHotspot(null);
       setAiNarration(null);
+      analyticsService.trackEvent("vr_opened", { sceneId: activeVRScene.id, sceneTitle: activeVRScene.title });
     }
   }, [activeVRScene]);
 

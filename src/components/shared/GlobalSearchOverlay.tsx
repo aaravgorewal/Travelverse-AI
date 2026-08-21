@@ -6,6 +6,7 @@ import { useUIStore } from "../../stores/useUIStore";
 import { universalSearchService, UniversalSearchResultItem } from "../../features/search/universalSearchService";
 import { formatCurrency } from "../../lib/utils";
 import { useTravelStore } from "../../stores/useTravelStore";
+import { analyticsService } from "../../services";
 
 export const GlobalSearchOverlay: React.FC = () => {
   const { 
@@ -37,6 +38,7 @@ export const GlobalSearchOverlay: React.FC = () => {
       return;
     }
     const response = universalSearchService.search({ query: debouncedQuery, itemsPerPage: 6 });
+    analyticsService.trackEvent("search_started", { query: debouncedQuery });
     setResults(response.items);
     setSelectedIndex(0);
   }, [debouncedQuery]);

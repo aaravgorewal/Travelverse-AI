@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTravelStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
-import { paymentService } from "../../services";
+import { paymentService, analyticsService } from "../../services";
 import { Booking } from "../../types";
 import { Button, Card, Badge, Input } from "../../components/ui";
 import { formatCurrency, generateBookingRef } from "../../lib/utils";
@@ -44,6 +44,13 @@ export const PaymentsView: React.FC = () => {
 
   const { fields: travelerFields } = useFieldArray({ control, name: "travelers" });
   const paymentProvider = watch("paymentProvider");
+
+  useEffect(() => {
+    analyticsService.trackEvent("booking_started", {
+      type: checkoutItem?.type || "unknown",
+      totalPrice: checkoutItem?.totalPrice || 0
+    });
+  }, []);
 
   useEffect(() => {
     if (checkoutItem && travelerFields.length !== checkoutItem.travelers) {
@@ -126,6 +133,10 @@ export const PaymentsView: React.FC = () => {
       };
 
       addBooking(newBooking);
+      analyticsService.trackEvent("booking_completed", { 
+        reference: newBooking.referenceNumber, 
+        totalAmount: newBooking.totalAmount 
+      });
       setBookingResult({ ...result, reference: newBooking.referenceNumber });
       setBookingStatus("confirmed");
       clearCheckout();
