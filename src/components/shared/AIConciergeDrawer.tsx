@@ -1,18 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  X,
-  Send,
-  Bot,
-  Sparkles,
-  Plane,
-  Utensils,
-  DollarSign,
-  Crown,
-  FileCheck,
-  Compass,
-  Loader2,
-  Minimize2,
-  RefreshCw,
+  X, Send, Bot, Sparkles, Plane, Utensils, DollarSign, Crown, FileCheck, 
+  Loader2, Mic, MicOff, Volume2, VolumeX
 } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
 import { aiService } from "../../services";
@@ -49,8 +38,53 @@ export const AIConciergeDrawer: React.FC = () => {
     },
   ]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Voice AI States
+  const [voiceState, setVoiceState] = useState<"idle" | "listening" | "processing" | "speaking">("idle");
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [shouldSpeak, setShouldSpeak] = useState(true);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const synthesisUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Initialize Web Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setIsSpeechSupported(true);
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = "en-US";
+
+      rec.onstart = () => {
+        setVoiceState("listening");
+      };
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(transcript);
+        setVoiceState("processing");
+        // Automatically submit the transcript
+        setTimeout(() => {
+          handleSendMessage(transcript);
+        }, 300);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech recognition error", e);
+        setVoiceState("idle");
+      };
+
+      rec.onend = () => {
+        setVoiceState(prev => prev === "listening" ? "idle" : prev);
+      };
+
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  // Sync initial prompt from store
   useEffect(() => {
     if (isAIConciergeOpen && aiInitialPrompt) {
       setActivePersona("flight_scout");
@@ -68,11 +102,82 @@ export const AIConciergeDrawer: React.FC = () => {
     }
   }, [messages, isAIConciergeOpen]);
 
+  // Speech synthesis shutdown on unmount/close
+  useEffect(() => {
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isAIConciergeOpen]);
+
   if (!isAIConciergeOpen) return null;
+
+  const startVoiceListening = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // Stop talking if we start listening
+    }
+    if (recognitionRef.current && voiceState === "idle") {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error("Failed to start speech recognition", err);
+      }
+    }
+  };
+
+  const stopVoiceListening = () => {
+    if (recognitionRef.current && voiceState === "listening") {
+      recognitionRef.current.stop();
+      setVoiceState("idle");
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (!window.speechSynthesis || !shouldSpeak) return;
+
+    window.speechSynthesis.cancel(); // Stop any active speech
+
+    // Clean markdown characters for a cleaner spoken output
+    const cleanText = text
+      .replace(/[#*`_~]/g, "")
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // Simplify links
+      .replace(/:\w+:/g, "") // Clean emojis/colons
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "en-US";
+    
+    utterance.onstart = () => {
+      setVoiceState("speaking");
+    };
+
+    utterance.onend = () => {
+      setVoiceState("idle");
+    };
+
+    utterance.onerror = () => {
+      setVoiceState("idle");
+    };
+
+    synthesisUtteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setVoiceState("idle");
+    }
+  };
 
   const handleSendMessage = async (customText?: string) => {
     const textToSend = customText || inputMessage.trim();
     if (!textToSend || isLoading) return;
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // Mute assistant if sending new message
+    }
 
     const userMsg = {
       id: `u-${Date.now()}`,
@@ -84,9 +189,9 @@ export const AIConciergeDrawer: React.FC = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage("");
     setIsLoading(true);
+    setVoiceState("processing");
 
     try {
-      // Call service layer (never direct browser API keys)
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       const response = await aiService.chatWithConcierge({
         message: textToSend,
@@ -103,17 +208,25 @@ export const AIConciergeDrawer: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+      setVoiceState("idle");
+
+      // Auto speak if the synthesis is enabled
+      setTimeout(() => speakText(response.reply), 200);
+
     } catch (err: any) {
+      const errorContent = `⚠️ I encountered a temporary connection glitch. However, based on our database: Tokyo has fantastic availability for September, and flights with Quantum Airways are currently on sale. Would you like me to generate a complete custom day-by-day plan?`;
       setMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: "assistant" as const,
-          content: `⚠️ I encountered a temporary connection glitch. However, based on our database: Tokyo has fantastic availability for September, and flights with Quantum Airways are currently on sale. Would you like me to generate a complete custom day-by-day plan?`,
+          content: errorContent,
           suggestedActions: ["Open Full AI Trip Generator", "Explore Flights to Tokyo", "View 360° VR Preview"],
           timestamp: "Just now",
         },
       ]);
+      setVoiceState("idle");
+      setTimeout(() => speakText("I encountered a connection glitch. We have flights on sale to Tokyo."), 200);
     } finally {
       setIsLoading(false);
     }
@@ -130,13 +243,25 @@ export const AIConciergeDrawer: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="text-sm font-extrabold tracking-tight">TravelVerse Copilot</h3>
-              <Badge variant="purple" size="sm">Gemini 3.7</Badge>
+              <Badge variant="purple" size="sm">Voice AI Active</Badge>
             </div>
             <p className="text-[11px] text-slate-300">Multi-Agent Travel Intelligence</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* TTS Speaker Toggle */}
+          <button
+            onClick={() => {
+              setShouldSpeak(!shouldSpeak);
+              if (shouldSpeak) stopSpeaking();
+            }}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title={shouldSpeak ? "Mute Voice AI" : "Unmute Voice AI"}
+          >
+            {shouldSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
+          </button>
+
           <button
             onClick={() => setAIConciergeOpen(false)}
             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
@@ -220,6 +345,20 @@ export const AIConciergeDrawer: React.FC = () => {
             <span>Consulting multi-agent travel graph...</span>
           </div>
         )}
+
+        {/* Voice AI Status bar overlay */}
+        {voiceState === "speaking" && (
+          <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-indigo-50 border border-indigo-150 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-900 dark:text-indigo-300 w-fit text-xs max-w-[85%] animate-in fade-in">
+            <span className="flex gap-1 h-3 items-center">
+              <span className="w-0.5 h-3 bg-indigo-500 rounded-full animate-bounce duration-150" />
+              <span className="w-0.5 h-2 bg-indigo-500 rounded-full animate-bounce duration-300" />
+              <span className="w-0.5 h-3 bg-indigo-500 rounded-full animate-bounce duration-200" />
+            </span>
+            <span className="font-semibold">Assistant is speaking...</span>
+            <button onClick={stopSpeaking} className="text-[10px] underline ml-2 cursor-pointer font-bold">Stop</button>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -232,14 +371,39 @@ export const AIConciergeDrawer: React.FC = () => {
           }}
           className="flex items-center gap-2"
         >
+          {/* Voice AI Mic Trigger Button */}
+          {isSpeechSupported ? (
+            <button
+              type="button"
+              onClick={voiceState === "listening" ? stopVoiceListening : startVoiceListening}
+              className={`p-2 rounded-xl transition-all cursor-pointer ${
+                voiceState === "listening"
+                  ? "bg-red-500 text-white animate-pulse"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              }`}
+              title={voiceState === "listening" ? "Listening..." : "Tap to Speak"}
+            >
+              {voiceState === "listening" ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+          ) : (
+            <div className="p-2 rounded-xl bg-slate-50 text-slate-400" title="Voice AI not supported in this browser">
+              <MicOff className="w-4 h-4 opacity-55" />
+            </div>
+          )}
+
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={`Ask ${PERSONAS.find((p) => p.id === activePersona)?.label}...`}
-            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={voiceState === "listening"}
+            placeholder={
+              voiceState === "listening"
+                ? "Listening... Speak clearly now."
+                : `Ask ${PERSONAS.find((p) => p.id === activePersona)?.label}...`
+            }
+            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-75"
           />
-          <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="h-9 w-9 p-0 rounded-xl">
+          <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading || voiceState === "listening"} className="h-9 w-9 p-0 rounded-xl">
             <Send className="w-4 h-4" />
           </Button>
         </form>
