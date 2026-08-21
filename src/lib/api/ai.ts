@@ -1,4 +1,4 @@
-import { apiClient } from "../../services/apiClient";
+import { apiClient, getStoredToken } from "../../services/apiClient";
 
 export type ConfidenceLevel = "high" | "medium" | "low";
 
@@ -52,6 +52,90 @@ export const aiAPI = {
   chat: async (payload: ChatRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/chat", payload);
     return data;
+  },
+
+  streamChat: async (payload: ChatRequest, callbacks: {
+    onStatus?: (msg: string) => void;
+    onToken?: (token: string) => void;
+    onWarning?: (msg: string) => void;
+    onError?: (err: string) => void;
+    onDone?: (data: AIResponse) => void;
+  }, signal?: AbortSignal): Promise<void> => {
+    // Note: To pass JWT we must use fetch manually, as standard EventSource doesn't support POST + Auth
+    const token = getStoredToken();
+    try {
+      const response = await fetch("/api/v1/ai/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload),
+        signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Stream connection failed: ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error("ReadableStream not supported by browser.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        // SSE lines end with \n\n
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const chunk = buffer.slice(0, boundary).trim();
+          buffer = buffer.slice(boundary + 2);
+          
+          if (chunk.startsWith("data: ")) {
+            const dataStr = chunk.slice(6);
+            if (dataStr === "[DONE]") {
+               break;
+            }
+            try {
+              const event = JSON.parse(dataStr);
+              switch(event.event) {
+                case "status":
+                  callbacks.onStatus?.(event.content);
+                  break;
+                case "token":
+                  callbacks.onToken?.(event.content);
+                  break;
+                case "warning":
+                  callbacks.onWarning?.(event.content);
+                  break;
+                case "error":
+                  callbacks.onError?.(event.content);
+                  break;
+                case "done":
+                  callbacks.onDone?.(event.data as AIResponse);
+                  break;
+              }
+            } catch (e) {
+              console.error("Error parsing SSE chunk", e, dataStr);
+            }
+          }
+          boundary = buffer.indexOf("\n\n");
+        }
+      }
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        console.log("Stream aborted by user.");
+      } else {
+        callbacks.onError?.(e.message || "Stream failed");
+      }
+    }
   },
 
   confirmAction: async (payload: ActionConfirmationRequest): Promise<Record<string, any>> => {

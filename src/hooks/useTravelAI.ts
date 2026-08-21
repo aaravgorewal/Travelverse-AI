@@ -228,12 +228,64 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
     [defaultTimeoutMs, onSuccess, onError]
   );
 
+  const [streamText, setStreamText] = useState<string>("");
+  const [streamStatus, setStreamStatus] = useState<string>("");
+
   // 1. Chat
   const chat = useCallback(
     (params: ChatParams, options?: AIRequestOptions): Promise<ChatResponse> => {
       return executeAction("chat", (p, opt) => aiService.chat(p, opt), params, options);
     },
     [executeAction]
+  );
+
+  // 1b. Stream Chat
+  const streamChat = useCallback(
+    async (params: ChatParams, options?: AIRequestOptions): Promise<void> => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      lastActionCallRef.current = { action: "chat", params, options };
+      
+      setLoading(true);
+      setSuccess(false);
+      setError(null);
+      setStreamText("");
+      setStreamStatus("");
+      setLastAction("chat");
+      
+      setActionStates(prev => ({
+        ...prev,
+        chat: { ...prev.chat, loading: true, success: false, error: null }
+      }));
+
+      await aiService.streamChat(params, {
+        onStatus: (msg) => setStreamStatus(msg),
+        onToken: (t) => setStreamText(prev => prev + t),
+        onWarning: (msg) => console.warn("Stream Warning:", msg),
+        onError: (err) => {
+          setLoading(false);
+          setError(err);
+          setActionStates(prev => ({
+            ...prev,
+            chat: { ...prev.chat, loading: false, error: err }
+          }));
+          options?.onError?.(new Error(err));
+        },
+        onDone: (finalData) => {
+          setLoading(false);
+          setSuccess(true);
+          setData(finalData);
+          setActionStates(prev => ({
+            ...prev,
+            chat: { ...prev.chat, loading: false, success: true, data: finalData, timestamp: Date.now() }
+          }));
+          options?.onSuccess?.(finalData);
+        }
+      }, controller.signal);
+    },
+    []
   );
 
   // 2. Plan Trip
@@ -361,6 +413,9 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
     // Action Methods
     chat,
+    streamChat,
+    streamText,
+    streamStatus,
     planTrip,
     recommend,
     explain,

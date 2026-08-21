@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from typing import Dict, Any, Optional
 import json
 import uuid
@@ -91,6 +92,20 @@ async def execute_feature(
 async def chat(request: ChatRequest, orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_user)):
     ctx = TravelContext(user_id=str(current_user.id), role=current_user.role, preferences=request.preferences or {}, location_context=request.location_context)
     return await execute_feature("Global Assistant", request.message, ctx, orchestrator, request.conversation_id)
+
+@router.post("/chat/stream")
+async def chat_stream(request: ChatRequest, orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_user)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role, preferences=request.preferences or {}, location_context=request.location_context)
+    
+    async def event_generator():
+        try:
+            stream_gen = await orchestrator.execute_stream(request.message, ctx, feature_override="Global Assistant")
+            async for chunk in stream_gen:
+                yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'event': 'error', 'content': str(e)})}\n\n"
+            
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/plan-trip", response_model=AIResponse)
 async def plan_trip(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
