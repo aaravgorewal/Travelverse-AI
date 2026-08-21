@@ -1,10 +1,21 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import axiosRetry from "axios-retry";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: "/api",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
+  },
+});
+
+// Configure Axios Retry (3 retries, exponential backoff, only for idempotent/network errors)
+axiosRetry(apiClient, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error: AxiosError) => {
+    // Retry on network errors or 5xx server errors
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status === 503 || error.response?.status === 504 || error.response?.status === 429;
   },
 });
 
@@ -31,6 +42,10 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Customize timeouts per domain if needed
+    if (config.url?.includes("/ai/")) {
+      config.timeout = 60000; // AI requests can take longer
+    }
     return config;
   },
   (error: AxiosError) => {
@@ -46,6 +61,12 @@ apiClient.interceptors.response.use(
       // Broadcast session expired event
       window.dispatchEvent(new CustomEvent("travelverse:session-expired"));
     }
+    
+    // Check for offline/timeout errors
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return Promise.reject(new Error("Request timed out. Please check your connection and try again."));
+    }
+
     const message =
       (error.response?.data as any)?.error ||
       error.message ||

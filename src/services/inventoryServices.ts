@@ -13,40 +13,40 @@ export interface HotelSearchParams {
 
 export const hotelService = {
   async searchHotels(params?: HotelSearchParams): Promise<HotelOffer[]> {
-    return apiClient.get("/hotels", { params });
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getHotelById(id: string): Promise<HotelOffer> {
-    return apiClient.get(`/hotels/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as HotelOffer), 800));
   },
 };
 
 export const packageService = {
   async getPackages(style?: string): Promise<TravelPackage[]> {
-    return apiClient.get("/packages", { params: { style } });
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getPackageById(id: string): Promise<TravelPackage> {
-    return apiClient.get(`/packages/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as TravelPackage), 800));
   },
 };
 
 export const experienceService = {
   async getExperiences(category?: string, city?: string): Promise<TravelExperience[]> {
-    return apiClient.get("/experiences", { params: { category, city } });
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getExperienceById(id: string): Promise<TravelExperience> {
-    return apiClient.get(`/experiences/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as TravelExperience), 800));
   },
 };
 
 export const vrService = {
   async getScenes(): Promise<VRScene[]> {
-    return apiClient.get("/vr/scenes");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getSceneById(id: string): Promise<VRScene> {
-    return apiClient.get(`/vr/scenes/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as VRScene), 800));
   },
 };

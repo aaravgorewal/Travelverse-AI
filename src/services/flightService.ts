@@ -14,14 +14,14 @@ export interface FlightSearchParams {
 
 export const flightService = {
   async searchFlights(params?: FlightSearchParams): Promise<FlightOffer[]> {
-    return apiClient.get("/flights", { params });
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getFlightById(id: string): Promise<FlightOffer> {
-    return apiClient.get(`/flights/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as FlightOffer), 800));
   },
 
   async getSeatMap(flightId: string): Promise<{ availableSeats: string[]; occupiedSeats: string[]; seatClasses: Record<string, string> }> {
-    return apiClient.get(`/flights/${flightId}/seatmap`);
+    return new Promise(resolve => setTimeout(() => resolve({ availableSeats: [], occupiedSeats: [], seatClasses: {} }), 800));
   },
 };

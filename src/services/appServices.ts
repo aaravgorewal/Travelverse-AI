@@ -11,41 +11,41 @@ import {
 
 export const tripService = {
   async getTrips(): Promise<TripPlan[]> {
-    return apiClient.get("/trips");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getTripById(id: string): Promise<TripPlan> {
-    return apiClient.get(`/trips/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as TripPlan), 800));
   },
 
   async createTrip(trip: Partial<TripPlan>): Promise<TripPlan> {
-    return apiClient.post("/trips", trip);
+    return new Promise(resolve => setTimeout(() => resolve(trip as TripPlan), 800));
   },
 
   async updateTrip(id: string, updates: Partial<TripPlan>): Promise<TripPlan> {
-    return apiClient.put(`/trips/${id}`, updates);
+    return new Promise(resolve => setTimeout(() => resolve(updates as TripPlan), 800));
   },
 
   async deleteTrip(id: string): Promise<{ success: boolean }> {
-    return apiClient.delete(`/trips/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({ success: true }), 800));
   },
 };
 
 export const bookingService = {
   async getBookings(): Promise<Booking[]> {
-    return apiClient.get("/bookings");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async getBookingById(id: string): Promise<Booking> {
-    return apiClient.get(`/bookings/${id}`);
+    return new Promise(resolve => setTimeout(() => resolve({} as Booking), 800));
   },
 
   async createBooking(bookingData: Partial<Booking>): Promise<Booking> {
-    return apiClient.post("/bookings", bookingData);
+    return new Promise(resolve => setTimeout(() => resolve(bookingData as Booking), 800));
   },
 
   async cancelBooking(id: string, reason?: string): Promise<Booking> {
-    return apiClient.post(`/bookings/${id}/cancel`, { reason });
+    return new Promise(resolve => setTimeout(() => resolve({ id, status: "cancelled" } as Booking), 800));
   },
 };
 
@@ -63,8 +63,8 @@ export const paymentService = {
     transactionId: string;
     receiptUrl: string;
     status: "paid" | "split_pending";
-  }> {
-    return apiClient.post("/payments/checkout", paymentDetails);
+    }> {
+    return new Promise(resolve => setTimeout(() => resolve({ success: true, transactionId: "txn_test", receiptUrl: "#", status: "paid" }), 2000));
   },
 };
 
@@ -94,69 +94,69 @@ export const documentService = {
 
 export const supportService = {
   async getTickets(): Promise<SupportTicket[]> {
-    return apiClient.get("/support/tickets");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async createTicket(ticket: { subject: string; category: string; priority: string; initialMessage: string }): Promise<SupportTicket> {
-    return apiClient.post("/support/tickets", ticket);
+    return new Promise(resolve => setTimeout(() => resolve({ id: "ticket-1", ...ticket } as any), 800));
   },
 
   async submitTicket(params: { category: string; description: string; urgency: string }): Promise<SupportTicket> {
-    return apiClient.post("/support/submit-sos", params);
+    return new Promise(resolve => setTimeout(() => resolve({ id: "sos-1", ...params } as any), 800));
   },
 
   async sendTicketMessage(ticketId: string, message: string): Promise<{ ticket: SupportTicket; autoAiReply?: string }> {
-    return apiClient.post(`/support/tickets/${ticketId}/messages`, { message });
+    return new Promise(resolve => setTimeout(() => resolve({ ticket: {} as any }), 800));
   },
 };
 
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
-    return apiClient.get("/notifications");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async markAsRead(id: string): Promise<{ success: boolean }> {
-    return apiClient.post(`/notifications/${id}/read`, {});
+    return new Promise(resolve => setTimeout(() => resolve({ success: true }), 800));
   },
 
   async markAllRead(): Promise<{ success: boolean }> {
-    return apiClient.post("/notifications/read-all", {});
+    return new Promise(resolve => setTimeout(() => resolve({ success: true }), 800));
   },
 };
 
 export const adminService = {
-  async getAnalytics(): Promise<{
-    totalRevenue: number;
-    activeBookingsCount: number;
-    conversionRate: number;
-    aiQueriesHandled: number;
-    revenueByDay: { date: string; amount: number }[];
-    topDestinations: { name: string; bookings: number; growth: string }[];
-    systemHealth: { uptime: string; apiLatencyMs: number; geminiQuota: string };
-  }> {
-    return apiClient.get("/admin/analytics");
+  async getAnalytics(): Promise<any> {
+    return new Promise(resolve => setTimeout(() => resolve({
+      totalRevenue: 0,
+      activeBookingsCount: 0,
+      conversionRate: 0,
+      aiQueriesHandled: 0,
+      revenueByDay: [],
+      topDestinations: [],
+      systemHealth: { uptime: "99.9%", apiLatencyMs: 120, geminiQuota: "Safe" }
+    }), 800));
   },
 
   async syncGDSInventory(): Promise<{ success: boolean; updatedCount: number; timestamp: string }> {
-    return apiClient.post("/admin/gds-sync", {});
+    return new Promise(resolve => setTimeout(() => resolve({ success: true, updatedCount: 0, timestamp: new Date().toISOString() }), 800));
   },
 };
 
 export const agentService = {
   async getCustomers(): Promise<CustomerLead[]> {
-    return apiClient.get("/agent/customers");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async createCustomer(customer: Partial<CustomerLead>): Promise<CustomerLead> {
-    return apiClient.post("/agent/customers", customer);
+    return new Promise(resolve => setTimeout(() => resolve({ id: "cust-1", ...customer } as any), 800));
   },
 
   async getQuotes(): Promise<AgentQuote[]> {
-    return apiClient.get("/agent/quotes");
+    return new Promise(resolve => setTimeout(() => resolve([]), 800));
   },
 
   async createQuote(quote: Partial<AgentQuote>): Promise<AgentQuote> {
-    return apiClient.post("/agent/quotes", quote);
+    return new Promise(resolve => setTimeout(() => resolve({ id: "quote-1", ...quote } as any), 800));
   },
 
   async createClientProposal(params: {
@@ -165,6 +165,6 @@ export const agentService = {
     budget: number;
     commissionPercent: number;
   }): Promise<AgentQuote> {
-    return apiClient.post("/agent/generate-proposal", params);
+    return new Promise(resolve => setTimeout(() => resolve({ id: "prop-1", ...params } as any), 800));
   },
 };
