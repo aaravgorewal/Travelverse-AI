@@ -1,134 +1,89 @@
-import asyncio
 import sys
 import os
-import uuid
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-# Ensure the backend directory is in the path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.database.session import SessionLocal
+from app.models.identity import User, Agency, Agent, Customer, CustomerPreference
+from app.models.inventory import Destination, Activity
+from app.models.bookings import Booking, BookingItem, Hotel, Flight
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.future import select
-from app.database.session import Base
-from app.models.identity import User, Customer, Agent, Agency, CustomerPreference
-from app.models.trips import Trip, TripDay, Activity
-from app.models.inventory import Destination, Flight, Hotel
-from app.core.config import settings
+def seed_db():
+    db: Session = SessionLocal()
+    
+    try:
+        # Idempotency check: Does the demo agency exist?
+        existing_agency = db.query(Agency).filter(Agency.name == "Demo Travel Agency", Agency.is_demo == True).first()
+        if existing_agency:
+            print("Demo seed data already exists. Skipping to avoid duplicates.")
+            return
 
-# Override DB URL for async asyncpg connection if using Postgres, else use sqlite async
-# For demo script purposes we will assume the primary DB connection is accessible.
-db_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://") if "postgresql://" in settings.DATABASE_URL else "sqlite+aiosqlite:///./test.db"
-engine = create_async_engine(db_url, echo=False)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-async def seed_data():
-    print("Starting Idempotent Data Seed...")
-    async with AsyncSessionLocal() as session:
+        print("Seeding database with demo data...")
         
-        # 1. Check if demo agency exists
-        stmt = select(Agency).where(Agency.is_demo == True, Agency.name == "Demo Agency")
-        result = await session.execute(stmt)
-        agency = result.scalar_one_or_none()
-        if not agency:
-            agency = Agency(name="Demo Agency", contact_email="contact@demoagency.com", contact_phone="555-0100", is_demo=True)
-            session.add(agency)
-            await session.commit()
-            await session.refresh(agency)
-            print("Created Demo Agency.")
-            
-        # 2. Check if demo Agent exists
-        stmt = select(User).where(User.is_demo == True, User.email == "agent@demo.com")
-        result = await session.execute(stmt)
-        agent_user = result.scalar_one_or_none()
-        if not agent_user:
-            agent_user = User(name="Demo Agent", email="agent@demo.com", role="agent", is_demo=True)
-            session.add(agent_user)
-            await session.commit()
-            await session.refresh(agent_user)
-            
-            agent = Agent(user_id=agent_user.id, agency_id=agency.id, title="Senior Travel Designer", is_demo=True)
-            session.add(agent)
-            await session.commit()
-            print("Created Demo Agent.")
+        # 1. Agency
+        agency = Agency(name="Demo Travel Agency", is_demo=True)
+        db.add(agency)
+        db.commit()
 
-        # 3. Check if demo Traveler exists
-        stmt = select(User).where(User.is_demo == True, User.email == "traveler@demo.com")
-        result = await session.execute(stmt)
-        traveler_user = result.scalar_one_or_none()
-        if not traveler_user:
-            traveler_user = User(name="Demo Traveler", email="traveler@demo.com", role="traveler", is_demo=True)
-            session.add(traveler_user)
-            await session.commit()
-            await session.refresh(traveler_user)
-            
-            customer = Customer(user_id=traveler_user.id, name="Demo Traveler", email="traveler@demo.com", is_demo=True)
-            session.add(customer)
-            await session.commit()
-            await session.refresh(customer)
-            
-            pref = CustomerPreference(customer_id=customer.id, preferred_cabin="business", dietary_requirements="vegetarian", is_demo=True)
-            session.add(pref)
-            await session.commit()
-            print("Created Demo Traveler & Preferences.")
+        # 2. Users (Agent and Traveler)
+        agent_user = User(email="agent@demo.travelverse", hashed_password="fakehash", role="agent", is_demo=True)
+        traveler_user = User(email="traveler@demo.travelverse", hashed_password="fakehash", role="traveler", is_demo=True)
+        db.add_all([agent_user, traveler_user])
+        db.commit()
 
-        # 4. Check if demo Destination exists
-        stmt = select(Destination).where(Destination.is_demo == True, Destination.name == "Paris")
-        result = await session.execute(stmt)
-        dest = result.scalar_one_or_none()
-        if not dest:
-            dest = Destination(name="Paris", country="France", region="Europe", description="The city of light.", is_demo=True)
-            session.add(dest)
-            await session.commit()
-            print("Created Demo Destination (Paris).")
+        # 3. Agent & Customer Profiles
+        agent = Agent(user_id=agent_user.id, agency_id=agency.id, is_demo=True)
+        customer = Customer(user_id=traveler_user.id, first_name="Demo", last_name="Traveler", is_demo=True)
+        db.add_all([agent, customer])
+        db.commit()
 
-        # 5. Check if demo Hotel exists
-        stmt = select(Hotel).where(Hotel.is_demo == True, Hotel.name == "Demo Grand Hotel Paris")
-        result = await session.execute(stmt)
-        hotel = result.scalar_one_or_none()
-        if not hotel:
-            hotel = Hotel(name="Demo Grand Hotel Paris", provider_id="demo-hotel-1", rating=5, base_price=450.0, currency="USD", is_demo=True)
-            session.add(hotel)
-            await session.commit()
-            print("Created Demo Hotel.")
-
-        # 6. Check if demo Flight exists
-        stmt = select(Flight).where(Flight.is_demo == True, Flight.flight_number == "DM100")
-        result = await session.execute(stmt)
-        flight = result.scalar_one_or_none()
-        if not flight:
-            flight = Flight(flight_number="DM100", airline="Demo Airlines", origin="JFK", destination="CDG", base_price=1200.0, currency="USD", is_demo=True)
-            session.add(flight)
-            await session.commit()
-            print("Created Demo Flight.")
-
-        # 7. Check if demo Trip exists
-        stmt = select(Trip).where(Trip.is_demo == True, Trip.title == "Demo Paris Getaway")
-        result = await session.execute(stmt)
-        trip = result.scalar_one_or_none()
-        if not trip:
-            # Need customer ID
-            stmt_c = select(Customer).where(Customer.is_demo == True, Customer.email == "traveler@demo.com")
-            res_c = await session.execute(stmt_c)
-            c = res_c.scalar_one_or_none()
-            if c:
-                trip = Trip(customer_id=c.id, title="Demo Paris Getaway", status="planned", is_demo=True)
-                session.add(trip)
-                await session.commit()
-                await session.refresh(trip)
-                
-                # Add Day 1
-                day1 = TripDay(trip_id=trip.id, day_index=1, date="2026-10-01", notes="Arrival Day", is_demo=True)
-                session.add(day1)
-                await session.commit()
-                await session.refresh(day1)
-                
-                # Add Activity
-                act = Activity(trip_day_id=day1.id, title="Eiffel Tour", start_time="14:00", duration_minutes=120, is_demo=True)
-                session.add(act)
-                await session.commit()
-                print("Created Demo Trip, TripDay, and Activity.")
-            
-    print("Idempotent Seed Complete.")
+        # 4. Customer Preferences
+        prefs = CustomerPreference(
+            customer_id=customer.id, 
+            preferences={"dietary": "Vegetarian", "style": "Luxury"},
+            is_demo=True
+        )
+        db.add(prefs)
+        
+        # 5. Inventory (Destinations & Activities)
+        dest = Destination(name="Dubai", country="UAE", is_demo=True)
+        db.add(dest)
+        db.commit()
+        
+        act1 = Activity(destination_id=dest.id, name="Desert Safari", category="Adventure", is_demo=True)
+        act2 = Activity(destination_id=dest.id, name="Burj Khalifa Tour", category="Sightseeing", is_demo=True)
+        db.add_all([act1, act2])
+        
+        # 6. Mock Flights & Hotels (Raw items, not attached to live trips)
+        # Note: In the real app, these are BookingItems inside a Booking. We'll just seed a mock booking for testing.
+        from app.models.trips import Trip
+        import datetime
+        trip = Trip(customer_id=customer.id, name="Demo Dubai Trip", start_date=datetime.date.today(), end_date=datetime.date.today(), is_demo=True)
+        db.add(trip)
+        db.commit()
+        
+        booking = Booking(trip_id=trip.id, status="Confirmed", total_price=1500.0, is_demo=True)
+        db.add(booking)
+        db.commit()
+        
+        b_item_hotel = BookingItem(booking_id=booking.id, item_type="hotel", price=1000.0, is_demo=True)
+        b_item_flight = BookingItem(booking_id=booking.id, item_type="flight", price=500.0, is_demo=True)
+        db.add_all([b_item_hotel, b_item_flight])
+        db.commit()
+        
+        hotel = Hotel(booking_item_id=b_item_hotel.id, hotel_name="Atlantis The Palm", is_demo=True)
+        flight = Flight(booking_item_id=b_item_flight.id, flight_number="EK101", is_demo=True)
+        db.add_all([hotel, flight])
+        
+        db.commit()
+        print("Seed complete! Demo data inserted securely.")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to seed data: {e}")
+    finally:
+        db.close()
 
 if __name__ == "__main__":
-    asyncio.run(seed_data())
+    seed_db()
