@@ -10,7 +10,7 @@ from app.ai.orchestrator import TravelAIOrchestrator
 from app.ai.model_router import ModelRouter
 from app.providers.gemini import GeminiProvider
 from app.tools.registry import create_default_registry
-from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest
+from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest, ActionPrepareRequest
 from app.api.dependencies import get_current_user, get_current_traveler, get_current_agent
 from app.models.identity import User
 from app.database.session import AsyncSessionLocal
@@ -31,6 +31,25 @@ def get_action_gateway() -> ActionGateway:
 def get_orchestrator() -> TravelAIOrchestrator:
     return _orchestrator
 
+@router.post("/prepare-action")
+async def prepare_action(
+    request: ActionPrepareRequest,
+    gateway: ActionGateway = Depends(get_action_gateway),
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    try:
+        # Override user details with authenticated ones
+        request.user_id = str(current_user.id)
+        request.role = current_user.role
+        token = await gateway.prepare_action(request)
+        return {"status": "success", "token": token}
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/confirm-action")
 async def confirm_action(
     request: ActionConfirmationRequest,
@@ -38,8 +57,9 @@ async def confirm_action(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     try:
-        # Pass the authenticated user to the gateway for RBAC
-        return await gateway.execute_confirmed_action(request, user_id=str(current_user.id))
+        request.user_id = str(current_user.id)
+        request.role = current_user.role
+        return await gateway.execute_confirmed_action(request)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
