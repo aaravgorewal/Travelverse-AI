@@ -1,82 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Dict, Any, Optional
 import uuid
 
-from app.models.ai import AIResponse, ConfidenceLevel
-from app.schemas.copilot import CopilotChatRequest
-from app.services.copilot import CopilotService
-from app.ai.model_router import ModelRouter
-from app.ai.grounding_guard import GroundingGuard
-from app.services.deal_scope import DealScopeService
+from app.schemas.orchestration import TravelContext, AIResponse, ConfidenceLevel
+from app.ai.orchestrator import TravelAIOrchestrator
+from app.api.dependencies import get_current_agent
+from app.models.identity import User
+from app.api.ai_actions import get_orchestrator, execute_feature
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 
-_model_router = ModelRouter()
-_guard = GroundingGuard(router=_model_router)
-_deal_scope = DealScopeService(router=_model_router)
-_copilot_service = CopilotService(router=_model_router, guard=_guard, deal_scope=_deal_scope)
-
-def get_copilot_service() -> CopilotService:
-    return _copilot_service
-
-from app.core.security import require_agent
+class CopilotChatRequest(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    customer_id: Optional[str] = None
+    trip_id: Optional[str] = None
 
 @router.post("/chat", response_model=AIResponse)
 async def copilot_chat(
     request: CopilotChatRequest,
-    service: CopilotService = Depends(get_copilot_service),
-    auth: dict = Depends(require_agent)
+    orchestrator: TravelAIOrchestrator = Depends(get_orchestrator),
+    current_agent: User = Depends(get_current_agent)
 ) -> AIResponse:
     """
-    Agent Copilot endpoint.
-    9-step orchestration engine for Travel Agents.
+    Agent Copilot chat endpoint connecting to unified orchestrator.
+    Determines agent identity, authorization, available tools.
     """
-    try:
-        result = await service.handle_chat(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=request.conversation_id or str(uuid.uuid4()),
-            feature="AgentCopilot",
-            message=result.understanding,
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.services.alert_iq import AlertIQService
-
-_alert_iq_service = AlertIQService(router=_model_router)
-
-def get_alert_iq_service() -> AlertIQService:
-    return _alert_iq_service
-
-@router.get("/alerts", response_model=AIResponse)
-async def get_alerts(
-    agent_id: str,
-    service: AlertIQService = Depends(get_alert_iq_service),
-    auth: dict = Depends(require_agent)
-) -> AIResponse:
-    """
-    Agent AlertIQ endpoint.
-    Fetches raw system events and prioritizes them based on impact and urgency.
-    """
-    try:
-        result = await service.analyze_alerts(agent_id)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="AgentAlertIQ",
-            message=f"Found {result.critical_alerts} critical alerts out of {result.total_alerts} total.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    ctx = TravelContext(
+        user_id=str(current_agent.id), 
+        role=current_agent.role,
+        customer_id=request.customer_id,
+        trip_id=request.trip_id
+    )
+    return await execute_feature("Agent Copilot", request.message, ctx, orchestrator, request.conversation_id)
