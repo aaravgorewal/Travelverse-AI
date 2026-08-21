@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import json
 import uuid
 from pydantic import BaseModel
@@ -13,6 +13,8 @@ from app.tools.registry import create_default_registry
 from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest
 from app.api.dependencies import get_current_user, get_current_traveler, get_current_agent
 from app.models.identity import User
+from app.database.session import AsyncSessionLocal
+from app.services.conversation import ConversationService
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
@@ -192,10 +194,36 @@ async def generate_quote(request: Dict[str, Any], orchestrator: TravelAIOrchestr
     return await execute_feature("SmartQuote", msg, ctx, orchestrator)
 
 @router.post("/customer-message", response_model=AIResponse)
-async def generate_customer_message(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
-    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
-    msg = f"Draft a customer message: {json.dumps(request)}"
-    return await execute_feature("Customer Message", msg, ctx, orchestrator)
+async def customer_message(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role, customer_id=request.get("customer_id"))
+    return await execute_feature("Customer Message", request.get("message", ""), ctx, orchestrator)
+
+@router.get("/conversations")
+async def list_conversations(current_user: User = Depends(get_current_user)):
+    async with AsyncSessionLocal() as session:
+        service = ConversationService(session)
+        conversations = await service.list_conversations(str(current_user.id))
+        return [{"id": str(c.id), "title": c.title, "status": c.status, "created_at": c.created_at} for c in conversations]
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+    async with AsyncSessionLocal() as session:
+        service = ConversationService(session)
+        try:
+            messages = await service.get_conversation_history(str(current_user.id), conversation_id)
+            return [{"id": str(m.id), "role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]
+        except PermissionError as e:
+            raise HTTPException(status_code=403, detail=str(e))
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+    async with AsyncSessionLocal() as session:
+        service = ConversationService(session)
+        try:
+            await service.delete_conversation(str(current_user.id), conversation_id)
+            return {"status": "success"}
+        except PermissionError as e:
+            raise HTTPException(status_code=403, detail=str(e))
 
 @router.post("/voice", response_model=AIResponse)
 async def handle_voice(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_user)):

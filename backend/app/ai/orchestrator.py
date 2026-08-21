@@ -13,6 +13,7 @@ from app.services.context_builder import ContextBuilder
 from app.services.rag.rag_service import RAGService
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import AsyncSessionLocal
+from app.services.conversation import ConversationService
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,9 @@ class TravelAIOrchestrator:
         
         self._validate_request(user_message, context)
         
+        # Load sliding window context and summarize old context
+        conversation_id = getattr(context, "conversation_id", None)
+        
         if feature_override:
             intent = feature_override.lower().replace(" ", "_")
             intent_result = IntentResult(intent=intent, required_tools=[], confidence=1.0)
@@ -64,31 +68,61 @@ class TravelAIOrchestrator:
             user_profile=None,
             destination_data=context.location_context
         )
-        
-        ai_decision = await self._call_ai_model(intent, grounded_prompt, context.preferred_language)
-        self._validate_response(ai_decision)
-        guard_result = await self.grounding_guard.validate(ai_decision.response_text, grounded_prompt)
-        
-        if guard_result.is_hallucination:
-            ai_decision.response_text = guard_result.sanitized_text
-        
-        ui_actions, data_actions = self._determine_actions(ai_decision)
-        requires_confirmation = self._require_confirmation(ai_decision, data_actions)
-        
-        return self._return_universal_response(
-            text=ai_decision.response_text,
-            ui_actions=ui_actions,
-            data_actions=data_actions,
-            requires_confirmation=requires_confirmation,
-            hallucination_flag=guard_result.is_hallucination,
-            intent=intent
-        )
+
+        async with AsyncSessionLocal() as session:
+            conv_service = ConversationService(session)
+            # Fetch Memory
+            memory_context = ""
+            if conversation_id:
+                await conv_service.get_or_create_conversation(context.user_id, conversation_id)
+                recent = await conv_service.get_recent_messages(conversation_id)
+                summary = await conv_service.get_summary(context.user_id, conversation_id)
+                
+                if summary:
+                    memory_context += f"CONVERSATION SUMMARY:\n{summary}\n\n"
+                if recent:
+                    memory_context += "RECENT MESSAGES:\n" + "\n".join([f"{m.role}: {m.content}" for m in recent]) + "\n\n"
+            
+            final_prompt = f"{memory_context}\n\n{grounded_prompt}" if memory_context else grounded_prompt
+
+            ai_decision = await self._call_ai_model(intent, final_prompt, context.preferred_language or "English")
+            self._validate_response(ai_decision)
+            guard_result = await self.grounding_guard.validate(ai_decision.response_text, grounded_prompt)
+            
+            if guard_result.is_hallucination:
+                ai_decision.response_text = guard_result.sanitized_text
+            
+            ui_actions, data_actions = self._determine_actions(ai_decision)
+            requires_confirmation = self._require_confirmation(ai_decision, data_actions)
+            
+            if conversation_id:
+                # Save user message and AI response asynchronously
+                await conv_service.add_message(conversation_id, "user", user_message)
+                await conv_service.add_message(conversation_id, "assistant", ai_decision.response_text)
+                # Dispatch background summarizer
+                asyncio.create_task(self._background_summarize(context.user_id, conversation_id))
+            
+            return self._return_universal_response(
+                text=ai_decision.response_text,
+                ui_actions=ui_actions,
+                data_actions=data_actions,
+                requires_confirmation=requires_confirmation,
+                hallucination_flag=guard_result.is_hallucination,
+                intent=intent
+            )
+
+    async def _background_summarize(self, user_id: str, conversation_id: str):
+        async with AsyncSessionLocal() as session:
+            conv_service = ConversationService(session)
+            await conv_service.generate_and_update_summary_task(user_id, conversation_id)
 
     async def execute_stream(self, user_message: str, context: TravelContext, feature_override: Optional[str] = None) -> AsyncGenerator[str, None]:
         """Streaming execution pipeline using Server-Sent Events."""
         
         self._validate_request(user_message, context)
         yield f"data: {json.dumps({'event': 'status', 'content': 'Analyzing request...'})}\n\n"
+        
+        conversation_id = getattr(context, "conversation_id", None)
         
         if feature_override:
             intent = feature_override.lower().replace(" ", "_")
@@ -119,69 +153,84 @@ class TravelAIOrchestrator:
             destination_data=context.location_context
         )
         
-        category = TaskCategory.TRIP_PLANNING if "planning" in intent or intent in ["tripgenie", "smartroute"] else TaskCategory.SIMPLE_CHAT
-        
-        system_instruction = f"""
-        You are TRAVELVERSE AI. Answer the user based strictly on the provided Context and Tool Outputs.
-        MULTILINGUAL RULES:
-        1. You MUST respond to the user in {context.preferred_language}.
-        2. CRITICAL: You MUST NOT translate or modify structured identifiers. 
-        """
-        
-        yield f"data: {json.dumps({'event': 'status', 'content': 'Generating response...'})}\n\n"
-        
-        # Stream the text chunks
-        full_text = ""
-        try:
-            # We call the provider stream directly for the text output
-            stream_gen = self.router.provider.stream(
-                prompt=grounded_prompt, 
-                system_instruction=system_instruction,
-                model=self.router._get_model_for_category(category)
-            )
-            async for chunk in stream_gen:
-                full_text += chunk
-                yield f"data: {json.dumps({'event': 'token', 'content': chunk})}\n\n"
-        except Exception as e:
-            logger.error(f"Streaming failed: {e}")
-            yield f"data: {json.dumps({'event': 'error', 'content': str(e)})}\n\n"
-            return
+        async with AsyncSessionLocal() as session:
+            conv_service = ConversationService(session)
+            memory_context = ""
+            if conversation_id:
+                await conv_service.get_or_create_conversation(context.user_id, conversation_id)
+                recent = await conv_service.get_recent_messages(conversation_id)
+                summary = await conv_service.get_summary(context.user_id, conversation_id)
+                
+                if summary:
+                    memory_context += f"CONVERSATION SUMMARY:\n{summary}\n\n"
+                if recent:
+                    memory_context += "RECENT MESSAGES:\n" + "\n".join([f"{m.role}: {m.content}" for m in recent]) + "\n\n"
             
-        # Grounding check on full text
-        guard_result = await self.grounding_guard.validate(full_text, grounded_prompt)
-        final_text = guard_result.sanitized_text if guard_result.is_hallucination else full_text
-        
-        if guard_result.is_hallucination:
-            yield f"data: {json.dumps({'event': 'warning', 'content': 'Hallucination sanitized.'})}\n\n"
+            final_prompt = f"{memory_context}\n\n{grounded_prompt}" if memory_context else grounded_prompt
 
-        # Now, fetch structured actions in parallel using the text as context
-        action_prompt = f"Given the user request: '{user_message}' and the AI response: '{final_text}', output the structured UI widgets and data payload decisions."
-        try:
-            ai_decision = await self.router.generate_structured(
-                task_category=category,
-                prompt=action_prompt,
-                schema=AIActionDecision,
-                system_instruction="Extract the structural intent into the provided JSON schema."
+            category = TaskCategory.TRIP_PLANNING if "planning" in intent or intent in ["tripgenie", "smartroute"] else TaskCategory.SIMPLE_CHAT
+            
+            system_instruction = f"""
+            You are TRAVELVERSE AI. Answer the user based strictly on the provided Context and Tool Outputs.
+            MULTILINGUAL RULES:
+            1. You MUST respond to the user in {context.preferred_language or 'English'}.
+            2. CRITICAL: You MUST NOT translate or modify structured identifiers. 
+            """
+            
+            yield f"data: {json.dumps({'event': 'status', 'content': 'Generating response...'})}\n\n"
+            
+            full_text = ""
+            try:
+                stream_gen = self.router.provider.stream(
+                    prompt=final_prompt, 
+                    system_instruction=system_instruction,
+                    model=self.router._get_model_for_category(category)
+                )
+                async for chunk in stream_gen:
+                    full_text += chunk
+                    yield f"data: {json.dumps({'event': 'token', 'content': chunk})}\n\n"
+            except Exception as e:
+                logger.error(f"Streaming failed: {e}")
+                yield f"data: {json.dumps({'event': 'error', 'content': str(e)})}\n\n"
+                return
+                
+            guard_result = await self.grounding_guard.validate(full_text, grounded_prompt)
+            final_text = guard_result.sanitized_text if guard_result.is_hallucination else full_text
+            
+            if guard_result.is_hallucination:
+                yield f"data: {json.dumps({'event': 'warning', 'content': 'Hallucination sanitized.'})}\n\n"
+
+            action_prompt = f"Given the user request: '{user_message}' and the AI response: '{final_text}', output the structured UI widgets and data payload decisions."
+            try:
+                ai_decision = await self.router.generate_structured(
+                    task_category=category,
+                    prompt=action_prompt,
+                    schema=AIActionDecision,
+                    system_instruction="Extract the structural intent into the provided JSON schema."
+                )
+            except Exception:
+                ai_decision = AIActionDecision(response_text=final_text, ui_widgets=[], pending_data_calls=[], is_destructive_or_financial=False)
+
+            ui_actions, data_actions = self._determine_actions(ai_decision)
+            requires_confirmation = self._require_confirmation(ai_decision, data_actions)
+            
+            final_response = self._return_universal_response(
+                text=final_text,
+                ui_actions=ui_actions,
+                data_actions=data_actions,
+                requires_confirmation=requires_confirmation,
+                hallucination_flag=guard_result.is_hallucination,
+                intent=intent
             )
-        except Exception:
-            # Fallback if structured fails
-            ai_decision = AIActionDecision(response_text=final_text, ui_widgets=[], pending_data_calls=[], is_destructive_or_financial=False)
-
-        ui_actions, data_actions = self._determine_actions(ai_decision)
-        requires_confirmation = self._require_confirmation(ai_decision, data_actions)
-        
-        final_response = self._return_universal_response(
-            text=final_text,
-            ui_actions=ui_actions,
-            data_actions=data_actions,
-            requires_confirmation=requires_confirmation,
-            hallucination_flag=guard_result.is_hallucination,
-            intent=intent
-        )
-        
-        # Yield the validated, complete final JSON object
-        yield f"data: {json.dumps({'event': 'done', 'data': final_response.model_dump()})}\n\n"
-
+            
+            if conversation_id:
+                # Save user message and AI response asynchronously
+                await conv_service.add_message(conversation_id, "user", user_message)
+                await conv_service.add_message(conversation_id, "assistant", final_text)
+                # Dispatch background summarizer
+                asyncio.create_task(self._background_summarize(context.user_id, conversation_id))
+            
+            yield f"data: {json.dumps({'event': 'done', 'data': final_response.model_dump()})}\n\n"
 
     def _validate_request(self, message: str, context: TravelContext):
         if not message.strip():
