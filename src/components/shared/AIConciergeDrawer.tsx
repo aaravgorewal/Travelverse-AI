@@ -6,7 +6,7 @@ import {
 import { useUIStore } from "../../stores/useUIStore";
 import { useI18nStore } from "../../stores/useI18nStore";
 import { aiService } from "../../services";
-import { Button, Badge } from "../ui";
+import { Button, Badge, AISkeletonLoader } from "../ui";
 
 type AgentPersona = "concierge" | "flight_scout" | "foodie" | "luxury_host" | "budget_hacker" | "visa_guide";
 
@@ -342,10 +342,7 @@ export const AIConciergeDrawer: React.FC = () => {
         ))}
 
         {isLoading && (
-          <div className="flex items-center gap-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit text-xs text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-            <span>Consulting multi-agent travel graph...</span>
-          </div>
+          <AISkeletonLoader className="w-full max-w-[90%]" />
         )}
 
         {/* Voice AI Status bar overlay */}

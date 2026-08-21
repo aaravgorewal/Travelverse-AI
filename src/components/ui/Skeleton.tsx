@@ -146,3 +146,43 @@ export const SkeletonExperienceCard: React.FC<{ className?: string }> = ({ class
   );
 };
 
+export const AISkeletonLoader: React.FC<{ className?: string; defaultMessage?: string }> = ({ 
+  className, 
+  defaultMessage = "TRAVELVERSE is thinking..." 
+}) => {
+  const messages = [
+    "TRAVELVERSE is thinking...",
+    "Building your journey...",
+    "Comparing travel options...",
+    "Optimizing pricing variables...",
+    "Locating premium flight slots..."
+  ];
+
+  const [messageIdx, setMessageIdx] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setMessageIdx((prev) => (prev + 1) % messages.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className={cn("p-6 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-900/40 space-y-4 animate-pulse", className)}>
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+          <span className="h-4 w-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-bounce" />
+        </div>
+        <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 transition-all duration-300">
+          {messages[messageIdx]}
+        </span>
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-4/5" />
+        <Skeleton className="h-3 w-11/12" />
+        <Skeleton className="h-3 w-2/3" />
+      </div>
+    </div>
+  );
+};
+
