@@ -11,12 +11,12 @@ from app.ai.model_router import ModelRouter, TaskCategory
 
 logger = logging.getLogger(__name__)
 
+from pydantic import BaseModel
+
 # Subset of BudgetOptimizationResult for the AI to return, to avoid it trying to return the math fields
 class AIBudgetReasoning(BaseModel):
     ai_suggestions: List[str]
     suggested_cuts: List[AISuggestedCut]
-
-from pydantic import BaseModel
 
 class SmartBudgetService:
     """
