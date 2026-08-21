@@ -7,6 +7,7 @@ import { AIConciergeDrawer } from "./components/shared/AIConciergeDrawer";
 import { VRViewerModal } from "./components/shared/VRViewerModal";
 import { OfflineGuardian } from "./components/shared/OfflineGuardian";
 import { DealScopeDrawer } from "./components/shared/DealScopeDrawer";
+import { GlobalSearchOverlay } from "./components/shared/GlobalSearchOverlay";
 
 // Feature modules
 import { HomeView } from "./features/home/HomeView";
@@ -136,6 +137,9 @@ export function App() {
 
         {/* Global DealScope Comparison Drawer */}
         <DealScopeDrawer />
+
+        {/* Universal Global Search Palette */}
+        <GlobalSearchOverlay />
 
         {/* Global Bottom Trust & Navigation Footer (Hidden on mobile bottom nav if wanted, or padded) */}
         {currentModule !== "agent" && <Footer />}

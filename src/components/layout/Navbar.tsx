@@ -31,7 +31,7 @@ import { Button, Badge } from "../ui";
 import { AgentNavbar } from "./AgentNavbar";
 
 export const Navbar: React.FC = () => {
-  const { currentModule, setModule, toggleAIConcierge } = useUIStore();
+  const { currentModule, setModule, toggleAIConcierge, setGlobalSearchOpen } = useUIStore();
   const { user, setRole } = useAuthStore();
   const { currency, setCurrency } = useTravelStore();
   const { notifications, unreadCount, markAllRead } = useNotificationStore();
@@ -160,6 +160,18 @@ export const Navbar: React.FC = () => {
               ))}
             </select>
           </div>
+
+          {/* Global Search Trigger */}
+          <button
+            onClick={() => setGlobalSearchOpen(true)}
+            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1.5"
+            aria-label="Search"
+          >
+            <Search className="w-4 h-4" />
+            <kbd className="hidden md:inline-flex h-5 select-none items-center gap-0.5 rounded border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-950 px-1.5 font-mono text-[9px] font-medium text-slate-450">
+              <span>⌘K</span>
+            </kbd>
+          </button>
 
           {/* Notifications Trigger */}
           <div className="relative">
