@@ -14,6 +14,12 @@ class RAGDocument(BaseModel):
     category = Column(String(50), index=True, nullable=False) # 'destination', 'tbo_policy', 'support'
     title = Column(String(255), nullable=False)
     source_url = Column(String(255), nullable=True)
+    destination = Column(String(100), index=True, nullable=True)
+    document_type = Column(String(50), index=True, nullable=True)
+    language = Column(String(10), index=True, default="en")
+    role = Column(String(20), index=True, default="public") # 'agent', 'traveler', 'public'
+    source = Column(String(100), index=True, nullable=True)
+    version = Column(String(20), index=True, nullable=True)
     
     chunks = relationship("RAGDocumentChunk", back_populates="document", cascade="all, delete-orphan")
 

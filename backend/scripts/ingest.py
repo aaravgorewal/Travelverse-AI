@@ -55,6 +55,11 @@ class IngestionReport:
                 json.dump(self.errors, f, indent=2)
             print(f"Errors written to: {error_file}")
 
+from app.services.rag.rag_service import RAGService
+
+# ... in the imports section, replace the old import
+# (I'll just replace the process_record logic directly to use RAGService)
+
 async def process_record(session: AsyncSession, record_data: dict, report: IngestionReport):
     report.records_processed += 1
     try:
@@ -82,39 +87,22 @@ async def process_record(session: AsyncSession, record_data: dict, report: Inges
     # Determine if it's unstructured text for RAG or structured payload
     payload = record.payload
     if "text" in payload and len(payload.keys()) == 1:
-        # Unstructured, send to RAG
-        stmt = select(RAGDocument).where(RAGDocument.source_url == record.source_url)
-        doc_res = await session.execute(stmt)
-        if doc_res.scalars().first():
-            report.records_skipped += 1
-            return
-            
-        doc = RAGDocument(
+        rag_service = RAGService()
+        doc_id = await rag_service.ingest_document(
+            session=session,
             category=record.dataset_name,
             title=record.record_id,
-            source_url=record.source_url
+            text=payload["text"],
+            source_url=record.source_url,
+            source=record.source,
+            version=record.dataset_version
         )
-        session.add(doc)
-        await session.flush()
-        
-        # Call RAG pipeline to chunk and embed
-        rag_pipeline = RAGPipeline()
-        chunks = await rag_pipeline.process_document(payload["text"])
-        for idx, text_chunk in enumerate(chunks):
-            chunk = RAGDocumentChunk(
-                document_id=doc.id,
-                chunk_index=idx,
-                text_content=text_chunk,
-                # Mock embedding since we don't have live Gemini in ingest
-                embedding=[0.0] * 768 
-            )
-            session.add(chunk)
-            
-        dataset.record_count += 1
-        report.records_inserted += 1
+        if doc_id:
+            report.records_inserted += 1
+            dataset.record_count += 1
+        else:
+            report.records_skipped += 1
     else:
-        # Structured data, could map to actual models if needed. For now, increment dataset count.
-        # Implement duplicate detection based on record_id
         dataset.record_count += 1
         report.records_inserted += 1
 
