@@ -2,12 +2,44 @@
 import logging
 import hashlib
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Internal Normalized Schemas
+# ---------------------------------------------------------------------------
+
+class BaseGoogleResult(BaseModel):
+    source: str = "google"
+    live: bool = True
+    available: bool = True
+    mock: bool = False
+    error_reason: Optional[str] = None
+
+class PlaceResult(BaseGoogleResult):
+    place_id: str = ""
+    name: str = ""
+    address: str = ""
+    rating: float = 0.0
+    types: List[str] = []
+    lat: float = 0.0
+    lng: float = 0.0
+
+class RouteResult(BaseGoogleResult):
+    distance_meters: int = 0
+    duration_seconds: int = 0
+    polyline: str = ""
+
+class GeocodingResult(BaseGoogleResult):
+    lat: float = 0.0
+    lng: float = 0.0
+    formatted_address: str = ""
+    place_id: str = ""
 
 
 class GoogleProviderError(Exception):

@@ -1,16 +1,15 @@
 from typing import Any, Dict, List, Optional
 from app.core.config import settings
-from .google_base import BaseGoogleProvider
+from .google_base import BaseGoogleProvider, PlaceResult
 
 class GooglePlacesProvider(BaseGoogleProvider):
     PROVIDER_NAME = "google_places"
 
     def __init__(self):
         super().__init__(api_key=settings.GOOGLE_PLACES_API_KEY)
-        # Fallback 1: Local cache to serve data if API is down
-        self._places_cache: Dict[str, Any] = {}
+        self._places_cache: Dict[str, List[PlaceResult]] = {}
 
-    async def search_places(self, query: str, location: Optional[str] = None, radius: Optional[int] = None) -> Dict[str, Any]:
+    async def search_places(self, query: str, location: Optional[str] = None, radius: Optional[int] = None) -> List[PlaceResult]:
         """Search for places using Text Search."""
         cache_key = f"search_{query}_{location}_{radius}"
         url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
@@ -21,34 +20,51 @@ class GooglePlacesProvider(BaseGoogleProvider):
             params["radius"] = radius
             
         try:
-            result = await self._get(url, params, use_cache=True)
-            self._places_cache[cache_key] = result
-            return result
+            resp = await self._get(url, params, use_cache=True)
+            results = []
+            for r in resp.get("results", []):
+                geom = r.get("geometry", {}).get("location", {})
+                results.append(PlaceResult(
+                    place_id=r.get("place_id", ""),
+                    name=r.get("name", ""),
+                    address=r.get("formatted_address", ""),
+                    rating=r.get("rating", 0.0),
+                    types=r.get("types", []),
+                    lat=geom.get("lat", 0.0),
+                    lng=geom.get("lng", 0.0)
+                ))
+            self._places_cache[cache_key] = results
+            return results
         except Exception as e:
             if cache_key in self._places_cache:
                 return self._places_cache[cache_key]
-            # Fallback 2: Unavailable
-            return {
-                "results": [],
-                "status": "UNAVAILABLE",
-                "error_message": "Place information is currently unavailable."
-            }
+            return [PlaceResult(live=False, available=False, error_reason="api_unavailable")]
 
-    async def get_place_details(self, place_id: str) -> Dict[str, Any]:
+    async def get_place_details(self, place_id: str) -> PlaceResult:
         """Get details for a specific place."""
         cache_key = f"details_{place_id}"
         url = "https://maps.googleapis.com/maps/api/place/details/json"
         params = {"place_id": place_id}
         
         try:
-            result = await self._get(url, params, use_cache=True)
-            self._places_cache[cache_key] = result
+            resp = await self._get(url, params, use_cache=True)
+            r = resp.get("result", {})
+            if not r:
+                return PlaceResult(live=False, available=False, error_reason="not_found")
+                
+            geom = r.get("geometry", {}).get("location", {})
+            result = PlaceResult(
+                place_id=r.get("place_id", ""),
+                name=r.get("name", ""),
+                address=r.get("formatted_address", ""),
+                rating=r.get("rating", 0.0),
+                types=r.get("types", []),
+                lat=geom.get("lat", 0.0),
+                lng=geom.get("lng", 0.0)
+            )
+            self._places_cache[cache_key] = [result]
             return result
         except Exception as e:
-            if cache_key in self._places_cache:
-                return self._places_cache[cache_key]
-            return {
-                "result": {},
-                "status": "UNAVAILABLE",
-                "error_message": "Place details are currently unavailable."
-            }
+            if cache_key in self._places_cache and self._places_cache[cache_key]:
+                return self._places_cache[cache_key][0]
+            return PlaceResult(live=False, available=False, error_reason="api_unavailable")
