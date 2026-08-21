@@ -635,3 +635,98 @@ async def generate_customer_message(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.ai_memory import SaveMemoryRequest, RetrieveMemoryRequest, DeleteMemoryRequest
+from app.services.ai_memory import AIMemoryService
+
+_ai_memory_service = AIMemoryService(router=_model_router)
+
+def get_ai_memory_service() -> AIMemoryService:
+    return _ai_memory_service
+
+@router.post("/memory/save", response_model=AIResponse)
+async def save_memory(
+    request: SaveMemoryRequest,
+    service: AIMemoryService = Depends(get_ai_memory_service)
+) -> AIResponse:
+    try:
+        result = await service.save_memory(request)
+        msg = "Saved memory successfully." if result else "No safe travel memory extracted."
+        data = result.model_dump() if result else {}
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="AIMemory",
+            message=msg,
+            data=data,
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/memory/retrieve", response_model=AIResponse)
+async def retrieve_memory(
+    request: RetrieveMemoryRequest,
+    service: AIMemoryService = Depends(get_ai_memory_service)
+) -> AIResponse:
+    try:
+        result = await service.retrieve_memory(request)
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="AIMemory",
+            message=f"Retrieved {len(result.memories)} memories.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/memory/delete", response_model=AIResponse)
+async def delete_memory(
+    request: DeleteMemoryRequest,
+    service: AIMemoryService = Depends(get_ai_memory_service)
+) -> AIResponse:
+    try:
+        success = await service.delete_memory(request)
+        msg = "Memory deleted successfully." if success else "Memory not found."
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="AIMemory",
+            message=msg,
+            data={"success": success},
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/memory/summarize", response_model=AIResponse)
+async def summarize_memory(
+    request: RetrieveMemoryRequest,
+    service: AIMemoryService = Depends(get_ai_memory_service)
+) -> AIResponse:
+    try:
+        result = await service.summarize_memory(request)
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="AIMemory",
+            message="Memory summary generated.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
