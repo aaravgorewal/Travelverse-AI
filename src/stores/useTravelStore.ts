@@ -156,25 +156,32 @@ export const useTripStore = create<TripStoreState>()(
 interface NotificationState {
   notifications: NotificationItem[];
   unreadCount: number;
+  subscribers: ((notifs: NotificationItem[]) => void)[];
   setNotifications: (notifs: NotificationItem[]) => void;
   markAsRead: (id: string) => void;
   markAllRead: () => void;
+  deleteNotification: (id: string) => void;
   addNotification: (item: Omit<NotificationItem, "id" | "time" | "read">) => void;
+  subscribe: (callback: (notifs: NotificationItem[]) => void) => () => void;
 }
 
-export const useNotificationStore = create<NotificationState>((set) => ({
+export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: SEED_NOTIFICATIONS as unknown as NotificationItem[],
   unreadCount: SEED_NOTIFICATIONS.filter((n) => !n.read).length,
+  subscribers: [],
 
-  setNotifications: (notifications) =>
+  setNotifications: (notifications) => {
     set({
       notifications,
       unreadCount: notifications.filter((n) => !n.read).length,
-    }),
+    });
+    get().subscribers.forEach(cb => cb(notifications));
+  },
 
   markAsRead: (id) =>
     set((state) => {
       const updated = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+      state.subscribers.forEach(cb => cb(updated));
       return {
         notifications: updated,
         unreadCount: updated.filter((n) => !n.read).length,
@@ -182,10 +189,24 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     }),
 
   markAllRead: () =>
-    set((state) => ({
-      notifications: state.notifications.map((n) => ({ ...n, read: true })),
-      unreadCount: 0,
-    })),
+    set((state) => {
+      const updated = state.notifications.map((n) => ({ ...n, read: true }));
+      state.subscribers.forEach(cb => cb(updated));
+      return {
+        notifications: updated,
+        unreadCount: 0,
+      };
+    }),
+
+  deleteNotification: (id) =>
+    set((state) => {
+      const updated = state.notifications.filter((n) => n.id !== id);
+      state.subscribers.forEach(cb => cb(updated));
+      return {
+        notifications: updated,
+        unreadCount: updated.filter((n) => !n.read).length,
+      };
+    }),
 
   addNotification: (item) =>
     set((state) => {
@@ -196,9 +217,17 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         read: false,
       };
       const updated = [newNotif, ...state.notifications];
+      state.subscribers.forEach(cb => cb(updated));
       return {
         notifications: updated,
         unreadCount: updated.filter((n) => !n.read).length,
       };
     }),
+
+  subscribe: (callback) => {
+    set(state => ({ subscribers: [...state.subscribers, callback] }));
+    return () => {
+      set(state => ({ subscribers: state.subscribers.filter(cb => cb !== callback) }));
+    };
+  }
 }));

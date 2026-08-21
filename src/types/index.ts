@@ -669,7 +669,7 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: "flight_update" | "price_drop" | "gate_change" | "ai_recommendation" | "document_expiry" | "payment" | "flight_delay";
+  type: "booking" | "ai" | "flight" | "hotel" | "payment" | "alert" | "system" | "flight_update" | "price_drop" | "gate_change" | "ai_recommendation" | "document_expiry" | "flight_delay";
   time: string;
   read: boolean;
   linkModule?: string;
