@@ -3,6 +3,7 @@ import { Sparkles, Send, Plane, Building2, Map, Car, ArrowRight, Loader2, Refres
 import { aiService } from "../../../services";
 import { TripPlan } from "../../../types";
 import { Button, Card, Badge, Input } from "../../../components/ui";
+import { useToast } from "../../../components/ui/Toast";
 import { formatCurrency } from "../../../lib/utils";
 import { useUIStore } from "../../../stores/useUIStore";
 
@@ -12,6 +13,8 @@ export const AgentCopilot: React.FC = () => {
   const [result, setResult] = useState<TripPlan | null>(null);
   const [margin, setMargin] = useState(15);
   const [currency] = useState("INR");
+  const { showToast } = useToast();
+  const { setModule } = useUIStore();
 
   React.useEffect(() => {
     const handlePrompt = (e: any) => {
@@ -45,8 +48,8 @@ export const AgentCopilot: React.FC = () => {
         specialRequirements: prompt
       });
       setResult(res.trip);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showToast({ title: "Copilot Error", message: err.message || "Package generation failed. Please try again.", type: "error" });
     } finally {
       setIsGenerating(false);
     }
@@ -238,18 +241,52 @@ export const AgentCopilot: React.FC = () => {
             </Card>
 
             <div className="grid grid-cols-1 gap-2">
-              <Button className="w-full justify-start bg-indigo-600 hover:bg-indigo-700">
+              {/* BOOKING: payment — routes to checkout via payments module */}
+              <Button
+                className="w-full justify-start bg-indigo-600 hover:bg-indigo-700"
+                onClick={() => {
+                  showToast({ title: "Booking", message: "Redirecting to secure checkout...", type: "info" });
+                  setModule("payments");
+                }}
+              >
                 <CheckCircle2 className="w-4 h-4 mr-2" /> Book Package Instantly
               </Button>
-              <Button variant="outline" className="w-full justify-start border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+              {/* DOCUSWIFT: navigation — opens DocuSwift tab in Agent portal */}
+              <Button
+                variant="outline"
+                className="w-full justify-start border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                onClick={() => {
+                  setModule("agent");
+                  showToast({ title: "DocuSwift", message: "Opening Agent Portal → DocuSwift to generate client PDF.", type: "info" });
+                }}
+              >
                 <Send className="w-4 h-4 mr-2" /> Send to Customer (PDF)
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              {/* LOCAL UI: save draft to localStorage */}
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  if (!result) return;
+                  try {
+                    localStorage.setItem(`copilot_draft_${Date.now()}`, JSON.stringify({ result, margin, prompt }));
+                    showToast({ title: "Draft Saved", message: "Package draft saved to local storage.", type: "success" });
+                  } catch {
+                    showToast({ title: "Save Failed", message: "Could not save draft.", type: "error" });
+                  }
+                }}
+              >
                 <PlusCircle className="w-4 h-4 mr-2" /> Build / Save Draft Package
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              {/* LOCAL UI: clear result to re-generate */}
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => setResult(null)}
+              >
                 <RefreshCw className="w-4 h-4 mr-2" /> Modify Preferences
               </Button>
+              {/* NAVIGATION: opens DealScope drawer */}
               <Button variant="outline" className="w-full justify-start" onClick={() => useUIStore.getState().openDealScope()}>
                 <Sparkles className="w-4 h-4 mr-2" /> Compare Alternatives
               </Button>

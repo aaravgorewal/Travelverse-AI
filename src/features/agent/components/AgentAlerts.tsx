@@ -5,6 +5,7 @@ import {
   Mail, PhoneCall, RefreshCw, Loader2, CheckCircle2, Eye, EyeOff
 } from "lucide-react";
 import { Card, Badge, Button } from "../../../components/ui";
+import { useToast } from "../../../components/ui/Toast";
 
 interface AgentAlert {
   id: string;
@@ -30,14 +31,15 @@ export const AgentAlerts: React.FC = () => {
 
   // Action Pending Map (tracks which alert's action button is loading)
   const [actionPendingMap, setActionPendingMap] = useState<Record<string, boolean>>({});
+  const { showToast } = useToast();
 
   const fetchAlerts = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get("/api/v1/agent/alerts");
       setAlerts(response.data);
-    } catch (err) {
-      console.error("Failed to fetch agent alerts", err);
+    } catch (err: any) {
+      showToast({ title: "Alerts Unavailable", message: err.response?.data?.error || "Could not load alerts from server.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -51,8 +53,8 @@ export const AgentAlerts: React.FC = () => {
     try {
       const response = await axios.post(`/api/v1/agent/alerts/${id}/read`);
       setAlerts(prev => prev.map(a => a.id === id ? response.data : a));
-    } catch (err) {
-      console.error("Failed to toggle read state", err);
+    } catch (err: any) {
+      showToast({ title: "Error", message: err.message || "Could not mark alert as read.", type: "error" });
     }
   };
 
@@ -60,12 +62,10 @@ export const AgentAlerts: React.FC = () => {
     setActionPendingMap(prev => ({ ...prev, [id]: true }));
     try {
       const response = await axios.post(`/api/v1/agent/alerts/${id}/action`);
-      alert(response.data.message);
-      
-      // Update state to match resolved status returned by GDS backend
+      showToast({ title: "Action Executed", message: response.data.message || "Alert action completed.", type: "success" });
       setAlerts(prev => prev.map(a => a.id === id ? response.data.alert : a));
-    } catch (err) {
-      console.error("Failed to execute alert action", err);
+    } catch (err: any) {
+      showToast({ title: "Action Failed", message: err.response?.data?.error || err.message || "Could not execute action.", type: "error" });
     } finally {
       setActionPendingMap(prev => ({ ...prev, [id]: false }));
     }

@@ -5,6 +5,7 @@ import {
   Trash2, FileCheck, RefreshCw, X, ChevronRight
 } from "lucide-react";
 import { Button, Card, Badge, Input } from "../../../components/ui";
+import { useToast } from "../../../components/ui/Toast";
 
 interface DocuSwiftItem {
   id: string;
@@ -35,6 +36,7 @@ export const DocuSwift: React.FC = () => {
 
   // Modal Previews
   const [previewItem, setPreviewItem] = useState<DocuSwiftItem | null>(null);
+  const { showToast } = useToast();
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +51,9 @@ export const DocuSwift: React.FC = () => {
       setDrafts(prev => [response.data, ...prev]);
       setActiveDraft(response.data);
       setIsEditing(false);
-    } catch (err) {
-      console.error("Failed to generate document", err);
+      showToast({ title: "Document Generated", message: `${docType} draft created successfully.`, type: "success" });
+    } catch (err: any) {
+      showToast({ title: "Generation Failed", message: err.response?.data?.error || err.message || "Could not generate document.", type: "error" });
     } finally {
       setIsGenerating(false);
     }
@@ -74,21 +77,22 @@ export const DocuSwift: React.FC = () => {
       setDrafts(prev => prev.map(d => d.id === activeDraft.id ? response.data : d));
       setActiveDraft(response.data);
       setIsEditing(false);
-    } catch (err) {
-      console.error("Failed to save document edits", err);
+      showToast({ title: "Saved", message: "Document edits saved.", type: "success" });
+    } catch (err: any) {
+      showToast({ title: "Save Failed", message: err.message || "Could not save edits.", type: "error" });
     }
   };
 
   const handleSend = async (doc: DocuSwiftItem) => {
     try {
       const response = await axios.post(`/api/v1/agent/docuswift/send/${doc.id}`);
-      alert(response.data.message);
+      showToast({ title: "Sent", message: response.data.message || "Document sent to client.", type: "success" });
       setDrafts(prev => prev.map(d => d.id === doc.id ? { ...d, status: "sent" } : d));
       if (activeDraft?.id === doc.id) {
         setActiveDraft(prev => prev ? { ...prev, status: "sent" } : null);
       }
-    } catch (err) {
-      console.error("Failed to send document", err);
+    } catch (err: any) {
+      showToast({ title: "Send Failed", message: err.response?.data?.error || err.message || "Could not send document.", type: "error" });
     }
   };
 
