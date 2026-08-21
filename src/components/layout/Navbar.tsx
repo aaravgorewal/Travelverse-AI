@@ -167,10 +167,10 @@ export const Navbar: React.FC = () => {
           {/* Global Search Trigger */}
           <button
             onClick={() => setGlobalSearchOpen(true)}
-            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1.5"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1.5"
             aria-label="Search"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-5 h-5" />
             <kbd className="hidden md:inline-flex h-5 select-none items-center gap-0.5 rounded border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-950 px-1.5 font-mono text-[9px] font-medium text-slate-450">
               <span>⌘K</span>
             </kbd>
@@ -183,10 +183,10 @@ export const Navbar: React.FC = () => {
                 setShowNotifDropdown(!showNotifDropdown);
                 setShowUserDropdown(false);
               }}
-              className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="relative p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Notifications"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white animate-pulse">
                   {unreadCount}
@@ -255,7 +255,7 @@ export const Navbar: React.FC = () => {
                 setShowUserDropdown(!showUserDropdown);
                 setShowNotifDropdown(false);
               }}
-              className="flex items-center gap-1.5 p-1 sm:p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="flex min-h-[44px] min-w-[44px] items-center gap-1.5 p-1 sm:p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <img
                 src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}

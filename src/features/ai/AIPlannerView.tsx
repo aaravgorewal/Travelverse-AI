@@ -417,7 +417,7 @@ I am ready to help you plan, optimize, and orchestrate your next journey. What w
         />
       ) : (
         /* RENDER 3-COLUMN AI CONCIERGE WORKSPACE */
-        <div className="flex flex-col h-[calc(100vh-180px)] min-h-[640px] max-h-[920px] w-full rounded-3xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden font-sans">
+        <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] min-h-[600px] max-h-[920px] w-full rounded-3xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden font-sans">
           {/* Top Workspace Header */}
           <div className="h-14 shrink-0 px-4 sm:px-6 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
             {/* Left branding & session title */}
@@ -545,7 +545,7 @@ I am ready to help you plan, optimize, and orchestrate your next journey. What w
         <div
           className={`h-full transition-all duration-300 ${
             showHistorySidebar ? "w-64 xl:w-72 block shrink-0" : "hidden"
-          } ${mobileActiveTab === "history" ? "!block fixed inset-0 z-40 p-4 bg-slate-950/80 backdrop-blur-sm lg:relative lg:inset-auto lg:p-0" : "hidden lg:block"}`}
+          } ${mobileActiveTab === "history" ? "!block fixed inset-0 z-[60] p-4 bg-slate-950/90 backdrop-blur-md lg:relative lg:inset-auto lg:p-0" : "hidden lg:block"}`}
         >
           <div className="h-full relative">
             {mobileActiveTab === "history" && (

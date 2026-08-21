@@ -69,11 +69,11 @@ export const VRViewerModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-2 sm:p-6 select-none animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-0 md:p-6 select-none animate-in fade-in duration-200">
       {/* VR Viewport Frame */}
       <div
         ref={containerRef}
-        className="relative w-full max-w-6xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-950 flex flex-col justify-between"
+        className="relative w-full max-w-6xl h-full md:h-[85vh] md:rounded-3xl overflow-hidden shadow-2xl md:border border-slate-700 bg-slate-950 flex flex-col justify-between touch-none"
       >
         {/* Real 360 Viewer */}
         <div className="absolute inset-0 z-0">

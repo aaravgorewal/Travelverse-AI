@@ -190,9 +190,11 @@ export const PaymentsView: React.FC = () => {
 
       {renderStepper()}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        
-        {/* Step 1: Customer */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="lg:col-span-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            
+            {/* Step 1: Customer */}
         {currentStep === 1 && (
           <Card className="p-6 space-y-4 animate-in slide-in-from-right-4">
             <h2 className="text-lg font-bold flex items-center gap-2"><User className="w-5 h-5 text-indigo-500"/> Lead Customer Contact</h2>
@@ -312,7 +314,7 @@ export const PaymentsView: React.FC = () => {
 
         {/* Step 5: Provider-Agnostic Payment UI */}
         {currentStep === 5 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-right-4">
+          <div className="space-y-6 animate-in slide-in-from-right-4">
             <div className="lg:col-span-2 space-y-6">
               <Card className="p-6 space-y-4">
                 <div className="flex items-center justify-between mb-2">
@@ -362,41 +364,13 @@ export const PaymentsView: React.FC = () => {
                 </div>
               </Card>
             </div>
-            
-            {/* Enhanced Order Summary Right Col */}
-            <div className="space-y-6">
-              <Card className="p-6 space-y-4 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Order Summary</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(checkoutItem.totalPrice * 0.88, currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Taxes (VAT/GST)</span>
-                    <span>{formatCurrency(checkoutItem.totalPrice * 0.08, currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Provider Fees</span>
-                    <span>{formatCurrency(checkoutItem.totalPrice * 0.04, currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-emerald-600 font-bold">
-                    <span>Bundle Discount</span>
-                    <span>- {formatCurrency(0, currency)}</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                  <span className="text-sm font-bold">Total to Pay</span>
-                  <span className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">{formatCurrency(checkoutItem.totalPrice, currency)}</span>
-                </div>
-              </Card>
-            </div>
+
           </div>
         )}
 
         {/* Step 6: Confirmation Status */}
         {currentStep === 6 && (
-          <Card className="p-12 text-center max-w-xl mx-auto space-y-6 animate-in zoom-in-95">
+          <Card className="p-8 sm:p-12 text-center max-w-xl mx-auto space-y-6 animate-in zoom-in-95">
             {bookingStatus === "pending" && (
               <div className="flex flex-col items-center text-indigo-500 space-y-4">
                 <Loader2 className="w-16 h-16 animate-spin" />
@@ -446,15 +420,51 @@ export const PaymentsView: React.FC = () => {
                 <div className="flex gap-4 pt-4">
                   <Button type="button" variant="outline" onClick={() => setModule("home")}>Return Home</Button>
                   <Button type="button" onClick={() => { setBookingStatus("idle"); setCurrentStep(5); }}>Return to Payment</Button>
+          </form>
+        </div>
+
+        {/* Global Order Summary Right Col (Hidden on Step 6) */}
+        {currentStep < 6 && (
+          <div className="lg:col-span-1 space-y-6 order-first lg:order-last mb-6 lg:mb-0">
+            <Card className="p-6 space-y-4 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 sticky top-24 shadow-sm">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Order Summary</h3>
+              
+              <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-1 block">{checkoutItem.type}</span>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2">
+                  {(checkoutItem.item as any).title || (checkoutItem.item as any).name || (checkoutItem.item as any).airline}
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-1">{checkoutItem.dates.start}</p>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(checkoutItem.totalPrice * 0.88, currency)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Taxes (VAT/GST)</span>
+                  <span>{formatCurrency(checkoutItem.totalPrice * 0.08, currency)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Provider Fees</span>
+                  <span>{formatCurrency(checkoutItem.totalPrice * 0.04, currency)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Bundle Discount</span>
+                  <span>- {formatCurrency(0, currency)}</span>
                 </div>
               </div>
-            )}
-          </Card>
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <span className="text-sm font-bold">Total to Pay</span>
+                <span className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">{formatCurrency(checkoutItem.totalPrice, currency)}</span>
+              </div>
+            </Card>
+          </div>
         )}
+      </div>
 
-      </form>
-
-      {/* Secure Gateway Simulation Overlay */}
+      {/* Gateway Overlay */}
       {showGateway && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-in fade-in">
           <Card className="w-full max-w-md p-0 overflow-hidden shadow-2xl flex flex-col h-[500px]">

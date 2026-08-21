@@ -131,7 +131,7 @@ export const ItineraryView: React.FC = () => {
           </div>
 
           {/* Activity Cards Timeline */}
-          <div className="space-y-4 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+          <div className="space-y-4 relative before:absolute before:inset-0 before:left-[22px] before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
             {currentDay.activities.map((act, index) => (
               <div key={act.id} className="relative flex items-start gap-4 pl-2">
                 {/* Timeline icon node */}
