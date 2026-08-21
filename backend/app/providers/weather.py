@@ -35,22 +35,20 @@ class ForecastResult(BaseWeatherResult):
     forecast_days: List[WeatherData] = []
 
 # ---------------------------------------------------------------------------
-# Simple TTL Cache
+# Redis Cache for Weather Data
 # ---------------------------------------------------------------------------
+from app.core.redis import RedisCacheService
 
 class WeatherCache:
     def __init__(self, ttl_seconds: int = 1800): # 30 mins TTL
-        self.ttl = timedelta(seconds=ttl_seconds)
-        self._store: Dict[str, tuple[datetime, Any]] = {}
+        self.ttl = ttl_seconds
+        self._redis = RedisCacheService()
 
-    def get(self, key: str) -> Optional[Any]:
-        entry = self._store.get(key)
-        if entry and (datetime.utcnow() - entry[0]) < self.ttl:
-            return entry[1]
-        return None
+    async def get(self, key: str) -> Optional[Any]:
+        return await self._redis.get(key)
 
-    def set(self, key: str, value: Any):
-        self._store[key] = (datetime.utcnow(), value)
+    async def set(self, key: str, value: Any):
+        await self._redis.set(key, value, self.ttl)
 
 _weather_cache = WeatherCache()
 
@@ -69,11 +67,11 @@ class ConfiguredWeatherProvider:
         self.timeout = 10.0
 
     async def get_current_weather(self, lat: float, lng: float) -> WeatherResult:
-        cache_key = f"current_{lat}_{lng}"
+        cache_key = f"weather:current_{lat}_{lng}"
         
-        cached = _weather_cache.get(cache_key)
+        cached = await _weather_cache.get(cache_key)
         if cached:
-            return cached
+            return WeatherResult(**cached)
             
         if not self.api_key:
             return WeatherResult(live=False, available=False, error_reason="credentials_missing")
@@ -96,7 +94,7 @@ class ConfiguredWeatherProvider:
                     timestamp=current.get("last_updated", "")
                 )
                 
-                _weather_cache.set(cache_key, result)
+                await _weather_cache.set(cache_key, result.model_dump())
                 return result
                 
         except Exception as e:
@@ -104,11 +102,11 @@ class ConfiguredWeatherProvider:
             return WeatherResult(live=False, available=False, error_reason="api_unavailable")
 
     async def get_forecast(self, lat: float, lng: float, days: int = 5) -> ForecastResult:
-        cache_key = f"forecast_{lat}_{lng}_{days}"
+        cache_key = f"weather:forecast_{lat}_{lng}_{days}"
         
-        cached = _weather_cache.get(cache_key)
+        cached = await _weather_cache.get(cache_key)
         if cached:
-            return cached
+            return ForecastResult(**cached)
             
         if not self.api_key:
             return ForecastResult(live=False, available=False, error_reason="credentials_missing")
@@ -137,7 +135,7 @@ class ConfiguredWeatherProvider:
                 
                 result = ForecastResult(forecast_days=parsed_days)
                 
-                _weather_cache.set(cache_key, result)
+                await _weather_cache.set(cache_key, result.model_dump())
                 return result
                 
         except Exception as e:

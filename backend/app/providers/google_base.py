@@ -64,34 +64,39 @@ class GoogleNotFoundError(GoogleProviderError):
 
 
 # ---------------------------------------------------------------------------
-# Simple in-memory cache for safe, repeated read-only requests
+# Redis Cache for safe, repeated read-only requests
 # ---------------------------------------------------------------------------
-class RequestCache:
-    """TTL-based in-memory cache. Designed for idempotent GET-like requests only."""
+from app.core.redis import RedisCacheService
+import hashlib
+import json
 
-    def __init__(self, ttl_seconds: int = 300):
-        self.ttl = timedelta(seconds=ttl_seconds)
-        self._store: Dict[str, tuple[datetime, Any]] = {}
+class RequestCache:
+    """Redis-based cache. Designed for idempotent GET-like requests only."""
+
+    def __init__(self, ttl_seconds: int = 3600): # 1 hour default
+        self.ttl = ttl_seconds
+        self._redis = RedisCacheService()
 
     def _key(self, provider: str, params: Dict[str, Any]) -> str:
         raw = json.dumps({"p": provider, **params}, sort_keys=True, default=str)
-        return hashlib.sha256(raw.encode()).hexdigest()
+        return f"google:{provider}:{hashlib.sha256(raw.encode()).hexdigest()}"
 
-    def get(self, provider: str, params: Dict[str, Any]) -> Optional[Any]:
+    async def get(self, provider: str, params: Dict[str, Any]) -> Optional[Any]:
         key = self._key(provider, params)
-        entry = self._store.get(key)
-        if entry and (datetime.utcnow() - entry[0]) < self.ttl:
+        entry = await self._redis.get(key)
+        if entry is not None:
             logger.debug(f"Cache HIT for {provider}")
-            return entry[1]
+            return entry
         return None
 
-    def set(self, provider: str, params: Dict[str, Any], value: Any):
+    async def set(self, provider: str, params: Dict[str, Any], value: Any):
         key = self._key(provider, params)
-        self._store[key] = (datetime.utcnow(), value)
+        await self._redis.set(key, value, self.ttl)
 
 
-# Singleton cache shared across providers
-_cache = RequestCache(ttl_seconds=300)
+# Singleton cache shared across Google providers
+_cache = RequestCache(ttl_seconds=86400) # 24 hours for Places/Routes
+
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +165,7 @@ class BaseGoogleProvider:
         params["key"] = self.api_key
 
         if use_cache:
-            cached = _cache.get(self.PROVIDER_NAME, params)
+            cached = await _cache.get(self.PROVIDER_NAME, params)
             if cached is not None:
                 return cached
 
@@ -174,7 +179,7 @@ class BaseGoogleProvider:
 
             data = resp.json()
             if use_cache:
-                _cache.set(self.PROVIDER_NAME, params, data)
+                await _cache.set(self.PROVIDER_NAME, params, data)
             return data
 
         except httpx.TimeoutException:
