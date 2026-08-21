@@ -19,7 +19,16 @@ class Settings(BaseSettings):
     
     # AI Config (Required for AI actions, but allow app startup if missing)
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL_DEFAULT: str = "gemini-1.5-flash"
+    
+    # Task-Specific Model Routing
+    MODEL_CLASSIFICATION: str = "gemini-1.5-flash"
+    MODEL_SIMPLE_CHAT: str = "gemini-1.5-flash"
+    MODEL_RECOMMENDATION: str = "gemini-1.5-flash"
+    MODEL_TRIP_PLANNING: str = "gemini-1.5-pro"
+    MODEL_COMPLEX_REASONING: str = "gemini-1.5-pro"
+    MODEL_SUMMARIZATION: str = "gemini-1.5-flash"
+    MODEL_TRANSLATION: str = "gemini-1.5-flash"
     
     # Optional Integrations (Defaults to None so they don't block startup)
     GOOGLE_MAPS_API_KEY: Optional[str] = None

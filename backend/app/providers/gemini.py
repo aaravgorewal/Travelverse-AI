@@ -44,7 +44,7 @@ class GeminiProvider(AIProvider):
         else:
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         
-        self.model = settings.GEMINI_MODEL
+        self.default_model = settings.GEMINI_MODEL_DEFAULT
 
     def _ensure_client(self):
         if not self.client:
@@ -59,6 +59,7 @@ class GeminiProvider(AIProvider):
     )
     async def generate_text(self, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> str:
         self._ensure_client()
+        model_name = kwargs.get("model", self.default_model)
         try:
             config = types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -67,7 +68,7 @@ class GeminiProvider(AIProvider):
             )
             # using synchronous SDK methods for now unless the new async genai is fully supported in this env
             response = self.client.models.generate_content(
-                model=self.model,
+                model=model_name,
                 contents=prompt,
                 config=config
             )
@@ -83,6 +84,7 @@ class GeminiProvider(AIProvider):
     )
     async def generate_structured(self, prompt: str, schema: Any, system_instruction: Optional[str] = None, **kwargs) -> Any:
         self._ensure_client()
+        model_name = kwargs.get("model", self.default_model)
         try:
             config = types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -91,7 +93,7 @@ class GeminiProvider(AIProvider):
                 temperature=kwargs.get("temperature", 0.1) # Lower temp for structured data
             )
             response = self.client.models.generate_content(
-                model=self.model,
+                model=model_name,
                 contents=prompt,
                 config=config
             )
@@ -101,13 +103,14 @@ class GeminiProvider(AIProvider):
 
     async def stream(self, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> AsyncGenerator[str, None]:
         self._ensure_client()
+        model_name = kwargs.get("model", self.default_model)
         try:
             config = types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=kwargs.get("temperature"),
             )
             response_stream = self.client.models.generate_content_stream(
-                model=self.model,
+                model=model_name,
                 contents=prompt,
                 config=config
             )
@@ -129,6 +132,7 @@ class GeminiProvider(AIProvider):
     )
     async def generate_with_tools(self, prompt: str, tools: List[Any], system_instruction: Optional[str] = None, **kwargs) -> Any:
         self._ensure_client()
+        model_name = kwargs.get("model", self.default_model)
         try:
             config = types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -136,7 +140,7 @@ class GeminiProvider(AIProvider):
                 temperature=kwargs.get("temperature")
             )
             response = self.client.models.generate_content(
-                model=self.model,
+                model=model_name,
                 contents=prompt,
                 config=config
             )
