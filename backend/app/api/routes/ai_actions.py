@@ -11,7 +11,7 @@ from app.ai.model_router import ModelRouter
 from app.providers.gemini import GeminiProvider
 from app.tools.registry import create_default_registry
 from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest, ActionPrepareRequest
-from app.api.dependencies import get_current_user, get_current_traveler, get_current_agent
+from app.api.routes.dependencies import get_current_user, get_current_traveler, get_current_agent
 from app.models.identity import User
 from app.database.session import AsyncSessionLocal
 from app.services.conversation import ConversationService

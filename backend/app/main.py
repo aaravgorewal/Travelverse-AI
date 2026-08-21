@@ -1,19 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import ai_actions, trips, users
 
-app = FastAPI(
-    title="TravelVerse AI OS API",
-    description="Backend for the TravelVerse AI OS platform",
-    version="1.0.0"
-)
+app = FastAPI(title="Travelverse AI Backend")
 
-import os
-
-# Configure CORS so the Vite frontend (React) can connect securely
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url], # Locked down for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,9 +19,7 @@ def health_check():
         "service": "travelverse-backend"
     }
 
-# Mount AI routers
-from app.api.ai_actions import router as ai_actions_router
-app.include_router(ai_actions_router)
-
-from app.api.copilot_actions import router as copilot_actions_router
-app.include_router(copilot_actions_router)
+# Include routers
+app.include_router(ai_actions.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(trips.router, prefix="/api/v1/trips", tags=["trips"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])

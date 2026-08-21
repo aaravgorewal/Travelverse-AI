@@ -9,7 +9,7 @@ from app.schemas.copilot import CopilotChatRequest, CopilotChatResult, CopilotPa
 from app.ai.model_router import ModelRouter, TaskCategory
 from app.ai.grounding_guard import GroundingGuard
 from app.services.deal_scope import DealScopeService
-from app.providers.tbo import TBOProvider
+from app.providers.tbo.client import TBOProvider
 from app.providers.google_places import GooglePlacesProvider
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,9 @@ import uuid
 
 from app.schemas.orchestration import TravelContext, AIResponse, ConfidenceLevel
 from app.ai.orchestrator import TravelAIOrchestrator
-from app.api.dependencies import get_current_agent
+from app.api.routes.dependencies import get_current_agent
 from app.models.identity import User
-from app.api.ai_actions import get_orchestrator, execute_feature
+from app.api.routes.ai_actions import get_orchestrator, execute_feature
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
