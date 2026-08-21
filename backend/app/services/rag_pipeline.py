@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 class RetrievedChunk:
     chunk_id: str
     document_id: str
-    category: str
+    source_title: str
+    source_type: str
     text_content: str
     similarity_score: float
 
@@ -98,7 +99,8 @@ class RagPipelineService:
             RetrievedChunk(
                 chunk_id=str(uuid.uuid4()),
                 document_id="mock_doc_1",
-                category=category_filter or "general",
+                source_title="General Knowledge Base",
+                source_type=category_filter or "general",
                 text_content=f"This is a verified RAG chunk retrieved for query '{query}'. (Mock Data)",
                 similarity_score=0.92
             )
