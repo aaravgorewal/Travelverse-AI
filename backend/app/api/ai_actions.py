@@ -601,3 +601,37 @@ async def generate_quote(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.customer_message import CustomerMessageRequest
+from app.services.customer_message import CustomerMessageService
+
+_customer_message_service = CustomerMessageService(router=_model_router)
+
+def get_customer_message_service() -> CustomerMessageService:
+    return _customer_message_service
+
+@router.post("/customer-message", response_model=AIResponse)
+async def generate_customer_message(
+    request: CustomerMessageRequest,
+    service: CustomerMessageService = Depends(get_customer_message_service)
+) -> AIResponse:
+    """
+    Customer Message Generator endpoint.
+    Drafts outbound communications relying strictly on verified backend data.
+    """
+    try:
+        result = await service.generate_message(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="CustomerMessageGenerator",
+            message=f"Drafted a {request.tone} {request.message_type} message.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
