@@ -30,5 +30,8 @@ class Settings(BaseSettings):
     
     # Feature Flags
     MOCK_MODE: bool = True
+    
+    # Vector Database settings
+    VECTOR_DIMENSION: int = 768
 
 settings = Settings()
