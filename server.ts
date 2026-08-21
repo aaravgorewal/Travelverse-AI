@@ -3074,6 +3074,21 @@ app.post("/api/v1/agent/alerts/:id/action", (req, res) => {
   res.json({ success: true, alert, message: `Successfully executed: "${alert.actionLabel}"` });
 });
 
+app.post("/api/v1/auth/delete-account", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    const session = activeSessions.get(token);
+    if (session) {
+      // Remove session & user
+      usersDb.delete(session.userId);
+      activeSessions.delete(token);
+      return res.json({ success: true, message: "Your account has been deleted permanently." });
+    }
+  }
+  return res.status(401).json({ error: "Unauthorized session." });
+});
+
 // Vite middleware for development & static serving for production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

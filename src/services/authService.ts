@@ -127,17 +127,9 @@ export const authService = {
     return apiClient.post("/v1/auth/logout", {});
   },
 
-  // Compatibility helper for legacy calls
-  async login(
-    emailOrCredentials: string | { email: string; password?: string },
-    password?: string
-  ): Promise<{ user: UserProfile; token: string }> {
-    if (typeof emailOrCredentials === "string") {
-      const res = await this.loginWithPassword(emailOrCredentials, password || "");
-      return { user: res.user, token: res.token };
-    }
-    const res = await this.loginWithPassword(emailOrCredentials.email, emailOrCredentials.password || "");
-    return { user: res.user, token: res.token };
+  // 10. Delete Account
+  async deleteAccount(): Promise<{ success: boolean; message: string }> {
+    return apiClient.post("/v1/auth/delete-account", {});
   },
 };
 
