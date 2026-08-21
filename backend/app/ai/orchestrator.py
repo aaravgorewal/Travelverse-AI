@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.schemas.orchestration import TravelContext, UniversalAIResponse, UIAction, DataAction
 from app.ai.model_router import ModelRouter, TaskCategory
 from app.ai.intent_engine import IntentEngine, IntentResult
+from app.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,10 @@ class TravelAIOrchestrator:
     All feature requests route through this 13-step process.
     """
 
-    def __init__(self, router: ModelRouter):
+    def __init__(self, router: ModelRouter, tool_registry: ToolRegistry):
         self.router = router
         self.intent_engine = IntentEngine(router)
+        self.tool_registry = tool_registry
 
     async def execute(self, user_message: str, context: TravelContext) -> UniversalAIResponse:
         """Main execution pipeline."""
@@ -49,8 +51,8 @@ class TravelAIOrchestrator:
         # 5. Retrieve RAG knowledge if needed
         rag_knowledge = await self._retrieve_rag_knowledge(intent, user_message)
         
-        # 6. Execute approved tools
-        tool_results = await self._execute_approved_tools(tools, user_message, db_context)
+        # 6. Execute approved tools (permission-gated via ToolRegistry)
+        tool_results = await self._execute_approved_tools(tools, user_message, db_context, context.role)
         
         # 7. Construct grounded context
         grounded_prompt = self._construct_grounded_context(
@@ -113,12 +115,22 @@ class TravelAIOrchestrator:
             return "RAG Knowledge: Traveling to Japan requires a valid passport. Kyoto is famous for temples."
         return ""
 
-    async def _execute_approved_tools(self, tools: List[str], message: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        # Execute safe, read-only tools server-side before generation.
+    async def _execute_approved_tools(self, tools: List[str], message: str, context: Dict[str, Any], user_role: str) -> Dict[str, Any]:
+        """Execute tools through the ToolRegistry, which validates permissions before dispatch."""
         results = {}
-        for tool in tools:
-            # Dispatch to actual provider adapters (e.g. TBO, Weather API)
-            results[tool] = {"status": "simulated_success", "data": "Tool output here"}
+        for tool_name in tools:
+            try:
+                result = await self.tool_registry.execute(tool_name, {"message": message, **context}, user_role)
+                results[tool_name] = result
+            except PermissionError as e:
+                logger.warning(f"Permission denied for tool '{tool_name}': {e}")
+                results[tool_name] = {"status": "permission_denied", "error": str(e)}
+            except ValueError as e:
+                logger.warning(f"Tool '{tool_name}' not found: {e}")
+                results[tool_name] = {"status": "not_found", "error": str(e)}
+            except Exception as e:
+                logger.error(f"Tool '{tool_name}' execution failed: {e}")
+                results[tool_name] = {"status": "error", "error": str(e)}
         return results
 
     def _construct_grounded_context(self, user_message: str, db_context: Dict[str, Any], rag_knowledge: str, tool_results: Dict[str, Any]) -> str:
