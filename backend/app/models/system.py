@@ -1,10 +1,10 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, JSON
+from sqlalchemy import Uuid, Column, String, Integer, ForeignKey, JSON
 from .base import BaseModel
 
 class Notification(BaseModel):
     __tablename__ = "notifications"
     
-    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     title = Column(String, nullable=False)
     message = Column(String, nullable=False)
     status = Column(String, default="unread")
@@ -13,7 +13,7 @@ class Notification(BaseModel):
 class Alert(BaseModel):
     __tablename__ = "alerts"
     
-    agent_id = Column(String, ForeignKey("agents.id"), index=True, nullable=False)
+    agent_id = Column(Uuid, ForeignKey("agents.id", ondelete="CASCADE"), index=True, nullable=False)
     alert_type = Column(String, nullable=False)
     message = Column(String, nullable=False)
     severity = Column(String, default="info")
@@ -23,7 +23,7 @@ class Alert(BaseModel):
 class APIUsage(BaseModel):
     __tablename__ = "api_usage"
     
-    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=True)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     endpoint = Column(String, index=True, nullable=False)
     status_code = Column(Integer, nullable=False)
     latency_ms = Column(Integer, nullable=True)

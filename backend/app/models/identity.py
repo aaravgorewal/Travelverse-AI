@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Integer, JSON, ForeignKey
+from sqlalchemy import Uuid, Column, String, Boolean, Integer, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import BaseModel
 
@@ -26,8 +26,8 @@ class User(BaseModel):
 class Agent(BaseModel):
     __tablename__ = "agents"
     
-    user_id = Column(String, ForeignKey("users.id"), unique=True, index=True, nullable=False)
-    agency_id = Column(String, ForeignKey("agencies.id"), index=True, nullable=True)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
+    agency_id = Column(Uuid, ForeignKey("agencies.id", ondelete="CASCADE"), index=True, nullable=True)
     
     title = Column(String, nullable=True)
     total_sales = Column(Integer, default=0)
@@ -40,8 +40,8 @@ class Agent(BaseModel):
 class Customer(BaseModel):
     __tablename__ = "customers"
     
-    user_id = Column(String, ForeignKey("users.id"), unique=True, index=True, nullable=True) # Optional if guest
-    agent_id = Column(String, ForeignKey("agents.id"), index=True, nullable=True) # If managed by an agent
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True, nullable=True) # Optional if guest
+    agent_id = Column(Uuid, ForeignKey("agents.id", ondelete="CASCADE"), index=True, nullable=True) # If managed by an agent
     
     name = Column(String, nullable=False)
     email = Column(String, index=True, nullable=False)
@@ -56,7 +56,7 @@ class Customer(BaseModel):
 class CustomerPreference(BaseModel):
     __tablename__ = "customer_preferences"
     
-    customer_id = Column(String, ForeignKey("customers.id"), unique=True, index=True, nullable=False)
+    customer_id = Column(Uuid, ForeignKey("customers.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
     
     preferred_cabin = Column(String, nullable=True)
     preferred_hotel_brand = Column(String, nullable=True)
@@ -68,7 +68,7 @@ class CustomerPreference(BaseModel):
 class AgentPreference(BaseModel):
     __tablename__ = "agent_preferences"
     
-    agent_id = Column(String, ForeignKey("agents.id"), unique=True, index=True, nullable=False)
+    agent_id = Column(Uuid, ForeignKey("agents.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
     
     default_margin_percentage = Column(Integer, default=10)
     json_data = Column(JSON, nullable=True)

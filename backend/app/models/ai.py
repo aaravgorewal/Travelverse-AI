@@ -1,11 +1,11 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, JSON
+from sqlalchemy import Uuid, Column, String, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from .base import BaseModel
 
 class Conversation(BaseModel):
     __tablename__ = "conversations"
     
-    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     title = Column(String, nullable=True)
     status = Column(String, default="active")
     
@@ -14,7 +14,7 @@ class Conversation(BaseModel):
 class Message(BaseModel):
     __tablename__ = "messages"
     
-    conversation_id = Column(String, ForeignKey("conversations.id"), index=True, nullable=False)
+    conversation_id = Column(Uuid, ForeignKey("conversations.id", ondelete="CASCADE"), index=True, nullable=False)
     role = Column(String, nullable=False) # user, assistant, system
     content = Column(String, nullable=False)
     
@@ -23,28 +23,28 @@ class Message(BaseModel):
 class AIMemory(BaseModel):
     __tablename__ = "ai_memory"
     
-    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     key = Column(String, nullable=False)
     value = Column(JSON, nullable=False)
 
 class AIRequest(BaseModel):
     __tablename__ = "ai_requests"
     
-    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=True)
+    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     endpoint = Column(String, nullable=False)
     payload = Column(JSON, nullable=True)
 
 class AIResponse(BaseModel):
     __tablename__ = "ai_responses"
     
-    request_id = Column(String, ForeignKey("ai_requests.id"), index=True, nullable=False)
+    request_id = Column(Uuid, ForeignKey("ai_requests.id", ondelete="CASCADE"), index=True, nullable=False)
     response_payload = Column(JSON, nullable=True)
     latency_ms = Column(Integer, nullable=True)
 
 class AIAction(BaseModel):
     __tablename__ = "ai_actions"
     
-    response_id = Column(String, ForeignKey("ai_responses.id"), index=True, nullable=False)
+    response_id = Column(Uuid, ForeignKey("ai_responses.id", ondelete="CASCADE"), index=True, nullable=False)
     action_type = Column(String, nullable=False)
     parameters = Column(JSON, nullable=True)
 
@@ -60,7 +60,7 @@ class KnowledgeDocument(BaseModel):
 class KnowledgeChunk(BaseModel):
     __tablename__ = "knowledge_chunks"
     
-    document_id = Column(String, ForeignKey("knowledge_documents.id"), index=True, nullable=False)
+    document_id = Column(Uuid, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), index=True, nullable=False)
     content = Column(String, nullable=False)
     # Note: embedding column would go here (pgvector)
     

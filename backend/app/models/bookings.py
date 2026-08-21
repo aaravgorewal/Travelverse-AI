@@ -1,12 +1,12 @@
-from sqlalchemy import Column, String, Float, ForeignKey, JSON
+from sqlalchemy import Uuid, Column, String, Float, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from .base import BaseModel
 
 class Booking(BaseModel):
     __tablename__ = "bookings"
     
-    trip_id = Column(String, ForeignKey("trips.id"), index=True, nullable=True)
-    customer_id = Column(String, ForeignKey("customers.id"), index=True, nullable=False)
+    trip_id = Column(Uuid, ForeignKey("trips.id", ondelete="CASCADE"), index=True, nullable=True)
+    customer_id = Column(Uuid, ForeignKey("customers.id", ondelete="CASCADE"), index=True, nullable=False)
     
     status = Column(String, default="pending") # pending, confirmed, cancelled
     total_amount = Column(Float, nullable=False)
@@ -18,7 +18,7 @@ class Booking(BaseModel):
 class BookingItem(BaseModel):
     __tablename__ = "booking_items"
     
-    booking_id = Column(String, ForeignKey("bookings.id"), index=True, nullable=False)
+    booking_id = Column(Uuid, ForeignKey("bookings.id", ondelete="CASCADE"), index=True, nullable=False)
     item_type = Column(String, nullable=False) # flight, hotel, experience
     item_id = Column(String, nullable=False) # ID of the specific inventory item
     price = Column(Float, nullable=False)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, JSON
+from sqlalchemy import Uuid, Column, String, Integer, Float, ForeignKey, JSON
 from .base import BaseModel
 
 class Destination(BaseModel):
@@ -12,7 +12,7 @@ class Destination(BaseModel):
 class Location(BaseModel):
     __tablename__ = "locations"
     
-    destination_id = Column(String, ForeignKey("destinations.id"), index=True, nullable=False)
+    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=False)
     name = Column(String, nullable=False)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
@@ -20,7 +20,7 @@ class Location(BaseModel):
 class Place(BaseModel):
     __tablename__ = "places"
     
-    location_id = Column(String, ForeignKey("locations.id"), index=True, nullable=False)
+    location_id = Column(Uuid, ForeignKey("locations.id", ondelete="CASCADE"), index=True, nullable=False)
     name = Column(String, nullable=False)
     category = Column(String, nullable=True) # attraction, restaurant, etc.
     details = Column(JSON, nullable=True)
@@ -39,7 +39,7 @@ class Flight(BaseModel):
 class Hotel(BaseModel):
     __tablename__ = "hotels"
     
-    destination_id = Column(String, ForeignKey("destinations.id"), index=True, nullable=True)
+    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=True)
     name = Column(String, nullable=False)
     rating = Column(Float, nullable=True)
     price_per_night = Column(Float, nullable=True)
@@ -55,7 +55,7 @@ class Transfer(BaseModel):
 class Experience(BaseModel):
     __tablename__ = "experiences"
     
-    destination_id = Column(String, ForeignKey("destinations.id"), index=True, nullable=True)
+    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=True)
     name = Column(String, nullable=False)
     duration_minutes = Column(Integer, nullable=True)
     price = Column(Float, nullable=True)
