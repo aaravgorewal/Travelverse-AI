@@ -26,3 +26,6 @@ def health_check():
 # Mount AI routers
 from app.api.ai_actions import router as ai_actions_router
 app.include_router(ai_actions_router)
+
+from app.api.copilot_actions import router as copilot_actions_router
+app.include_router(copilot_actions_router)
