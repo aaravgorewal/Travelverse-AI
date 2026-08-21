@@ -10,6 +10,8 @@ from app.ai.model_router import ModelRouter
 from app.providers.gemini import GeminiProvider
 from app.tools.registry import create_default_registry
 from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest
+from app.api.dependencies import get_current_user, get_current_traveler, get_current_agent
+from app.models.identity import User
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
@@ -29,10 +31,12 @@ def get_orchestrator() -> TravelAIOrchestrator:
 @router.post("/confirm-action")
 async def confirm_action(
     request: ActionConfirmationRequest,
-    gateway: ActionGateway = Depends(get_action_gateway)
+    gateway: ActionGateway = Depends(get_action_gateway),
+    current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     try:
-        return await gateway.execute_confirmed_action(request)
+        # Pass the authenticated user to the gateway for RBAC
+        return await gateway.execute_confirmed_action(request, user_id=str(current_user.id))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
@@ -40,8 +44,9 @@ async def confirm_action(
 
 class ChatRequest(BaseModel):
     message: str
-    context: TravelContext
     conversation_id: Optional[str] = None
+    preferences: Optional[Dict[str, Any]] = None
+    location_context: Optional[Dict[str, Any]] = None
 
 # --- Unified AI Orchestrator Adapter ---
 async def execute_feature(
@@ -83,109 +88,108 @@ async def execute_feature(
 
 
 @router.post("/chat", response_model=AIResponse)
-async def chat(request: ChatRequest, orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    # Natural routing without feature override
-    return await execute_feature("Global Assistant", request.message, request.context, orchestrator, request.conversation_id)
+async def chat(request: ChatRequest, orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_user)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role, preferences=request.preferences or {}, location_context=request.location_context)
+    return await execute_feature("Global Assistant", request.message, ctx, orchestrator, request.conversation_id)
 
 @router.post("/plan-trip", response_model=AIResponse)
-async def plan_trip(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler", preferences=request.get("preferences", {}))
+async def plan_trip(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role, preferences=request.get("preferences", {}))
     msg = f"Plan a trip to {request.get('destination')} for {request.get('dates')}. Context: {json.dumps(request)}"
     return await execute_feature("TripGenie", msg, ctx, orchestrator)
 
 @router.post("/optimize-itinerary", response_model=AIResponse)
-async def optimize_itinerary(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def optimize_itinerary(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Optimize this itinerary based on routes: {json.dumps(request)}"
     return await execute_feature("SmartRoute", msg, ctx, orchestrator)
 
 @router.post("/optimize-budget", response_model=AIResponse)
-async def optimize_budget(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def optimize_budget(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Optimize my budget: {json.dumps(request)}"
     return await execute_feature("SmartBudget", msg, ctx, orchestrator)
 
 @router.post("/compare", response_model=AIResponse)
-async def compare(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def compare(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Compare these options: {json.dumps(request)}"
     return await execute_feature("DealScope", msg, ctx, orchestrator)
 
 @router.post("/explain", response_model=AIResponse)
-async def explain(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def explain(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Explain this recommendation: {json.dumps(request)}"
     return await execute_feature("ExplainMate", msg, ctx, orchestrator)
 
 @router.post("/recommend", response_model=AIResponse)
-async def recommend(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def recommend(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Recommend activities: {json.dumps(request)}"
     return await execute_feature("ExploreMore", msg, ctx, orchestrator)
 
 @router.post("/destination", response_model=AIResponse)
-async def get_destination_knowledge(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def get_destination_knowledge(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Tell me about this destination: {json.dumps(request)}"
     return await execute_feature("LocalSense", msg, ctx, orchestrator)
 
 @router.post("/packing-list", response_model=AIResponse)
-async def generate_packing_list(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def generate_packing_list(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Generate a packing list for: {json.dumps(request)}"
     return await execute_feature("PackMate", msg, ctx, orchestrator)
 
 @router.post("/travel-pulse", response_model=AIResponse)
-async def analyze_travel_pulse(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def analyze_travel_pulse(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Analyze travel disruptions for: {json.dumps(request)}"
     return await execute_feature("TravelPulse", msg, ctx, orchestrator)
 
 @router.post("/support", response_model=AIResponse)
-async def get_support(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def get_support(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_traveler)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"I need emergency support: {json.dumps(request)}"
     return await execute_feature("SafeNest", msg, ctx, orchestrator)
 
 @router.post("/personalize", response_model=AIResponse)
-async def personalize(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent") # Must be agent for Client360
+async def personalize(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role) 
     msg = f"Generate a Client360 profile for: {json.dumps(request)}"
     return await execute_feature("Client360", msg, ctx, orchestrator)
 
 @router.post("/create-package", response_model=AIResponse)
-async def create_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent")
+async def create_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
     msg = f"Bundle this package: {json.dumps(request)}"
     return await execute_feature("SmartBundle", msg, ctx, orchestrator)
 
 @router.post("/validate-package", response_model=AIResponse)
-async def validate_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent")
+async def validate_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
     msg = f"Validate this package for logistics: {json.dumps(request)}"
     return await execute_feature("Package Validator", msg, ctx, orchestrator)
 
 @router.post("/generate-quote", response_model=AIResponse)
-async def generate_quote(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent")
+async def generate_quote(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
     msg = f"Generate a quote for: {json.dumps(request)}"
     return await execute_feature("SmartQuote", msg, ctx, orchestrator)
 
 @router.post("/customer-message", response_model=AIResponse)
-async def generate_customer_message(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent")
+async def generate_customer_message(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
     msg = f"Draft a customer message: {json.dumps(request)}"
     return await execute_feature("Customer Message", msg, ctx, orchestrator)
 
 @router.post("/voice", response_model=AIResponse)
-async def handle_voice(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="traveler")
+async def handle_voice(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_user: User = Depends(get_current_user)):
+    ctx = TravelContext(user_id=str(current_user.id), role=current_user.role)
     msg = f"Voice Request: {json.dumps(request)}"
     return await execute_feature("Voice AI", msg, ctx, orchestrator)
 
-# Note: AlertIQ is primarily a background task but we can expose it if needed
 @router.post("/alert-iq", response_model=AIResponse)
-async def handle_alert_iq(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
-    ctx = TravelContext(user_id="default_user", role="agent")
+async def handle_alert_iq(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator), current_agent: User = Depends(get_current_agent)):
+    ctx = TravelContext(user_id=str(current_agent.id), role=current_agent.role)
     msg = f"Generate proactive AlertIQ warnings for: {json.dumps(request)}"
     return await execute_feature("AlertIQ", msg, ctx, orchestrator)

@@ -1,27 +1,36 @@
-import os
-from fastapi import Request, HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from datetime import datetime, timedelta
+from typing import Optional, Any
+from passlib.context import CryptContext
 import jwt
 
-security = HTTPBearer()
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-in-production")
+from app.core.config import settings
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    token = credentials.credentials
-    try:
-        # In a real system, verify signature and audience. For this audit, we decode without verification
-        # if the secret is dummy, or strictly verify if production.
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], options={"verify_signature": False})
-        return payload
-    except Exception as e:
-        # Simplified for audit mock auth
-        if token.startswith("tv_sess_"):
-            return {"role": "agent" if "agent" in token else "traveler"}
-        raise HTTPException(status_code=401, detail="Invalid token")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def require_agent(payload: dict = Depends(verify_token)):
-    if payload.get("role") != "agent":
-        raise HTTPException(status_code=403, detail="Forbidden: Agent access required")
-    return payload
+ALGORITHM = "HS256"
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def create_access_token(subject: str, expires_delta: Optional[timedelta] = None, role: str = "traveler") -> str:
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+        
+    to_encode = {"exp": expire, "sub": str(subject), "role": role}
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None, role: str = "traveler") -> str:
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=7)
+        
+    to_encode = {"exp": expire, "sub": str(subject), "role": role, "type": "refresh"}
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
