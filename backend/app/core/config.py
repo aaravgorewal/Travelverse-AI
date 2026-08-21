@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     
     # Feature Flags
     MOCK_MODE: bool = True
+    AI_LOG_LEVEL: str = "METRICS_ONLY" # OFF, METRICS_ONLY, FULL
     
     # Vector Database settings
     VECTOR_DIMENSION: int = 768
