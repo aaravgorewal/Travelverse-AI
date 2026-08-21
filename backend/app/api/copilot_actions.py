@@ -43,3 +43,36 @@ async def copilot_chat(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.services.alert_iq import AlertIQService
+
+_alert_iq_service = AlertIQService(router=_model_router)
+
+def get_alert_iq_service() -> AlertIQService:
+    return _alert_iq_service
+
+@router.get("/alerts", response_model=AIResponse)
+async def get_alerts(
+    agent_id: str,
+    service: AlertIQService = Depends(get_alert_iq_service)
+) -> AIResponse:
+    """
+    Agent AlertIQ endpoint.
+    Fetches raw system events and prioritizes them based on impact and urgency.
+    """
+    try:
+        result = await service.analyze_alerts(agent_id)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="AgentAlertIQ",
+            message=f"Found {result.critical_alerts} critical alerts out of {result.total_alerts} total.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
