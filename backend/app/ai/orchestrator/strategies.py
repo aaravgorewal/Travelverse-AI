@@ -14,7 +14,7 @@ class FeatureStrategy(ABC):
         pass
 
     @abstractmethod
-    def get_system_instruction(self, user_context: dict, trip_context: dict) -> str:
+    def get_system_instruction(self, user_context: dict, trip_context: dict, rag_context: List[str]) -> str:
         pass
 
     @abstractmethod
@@ -32,8 +32,11 @@ class TripGenieStrategy(FeatureStrategy):
         from app.schemas.trip_genie import TripGenieResponse # Placeholder import
         return TripGenieResponse
 
-    def get_system_instruction(self, user_context: dict, trip_context: dict) -> str:
-        return f"You are TripGenie. Plan an itinerary based on user preferences: {user_context}"
+    def get_system_instruction(self, user_context: dict, trip_context: dict, rag_context: List[str]) -> str:
+        base = f"You are TripGenie. Plan an itinerary based on user preferences: {user_context}\n"
+        if rag_context:
+            base += f"Use the following trusted knowledge to inform your plan:\n{rag_context}"
+        return base
 
     def requires_confirmation(self, response: BaseModel) -> bool:
         return False # Planning doesn't require hard booking confirmation
@@ -48,8 +51,11 @@ class SmartBundleStrategy(FeatureStrategy):
         from app.schemas.smart_bundle import SmartBundleResponse # Placeholder import
         return SmartBundleResponse
 
-    def get_system_instruction(self, user_context: dict, trip_context: dict) -> str:
-        return "You are SmartBundle. Bundle flights and hotels into a package."
+    def get_system_instruction(self, user_context: dict, trip_context: dict, rag_context: List[str]) -> str:
+        base = "You are SmartBundle. Bundle flights and hotels into a package.\n"
+        if rag_context:
+            base += f"Relevant factual data:\n{rag_context}"
+        return base
 
     def requires_confirmation(self, response: BaseModel) -> bool:
         return True # Booking/Packaging requires agent/user confirmation
