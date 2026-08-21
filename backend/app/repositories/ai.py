@@ -19,6 +19,18 @@ class KnowledgeRepository(BaseRepository[KnowledgeChunk]):
         # Uses pgvector cosine distance operator <=>
         return db.query(self.model).order_by(self.model.embedding.cosine_distance(query_embedding)).limit(limit).all()
 
+from app.models.ai import AIRequest, AIResponse
+
+class AIRequestRepository(BaseRepository[AIRequest]):
+    def __init__(self):
+        super().__init__(AIRequest)
+
+class AIResponseRepository(BaseRepository[AIResponse]):
+    def __init__(self):
+        super().__init__(AIResponse)
+
 conversation_repo = ConversationRepository()
 memory_repo = MemoryRepository()
 knowledge_repo = KnowledgeRepository()
+ai_request_repo = AIRequestRepository()
+ai_response_repo = AIResponseRepository()
