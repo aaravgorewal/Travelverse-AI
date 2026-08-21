@@ -53,8 +53,15 @@ import {
 } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
 import { apiClient } from "../../services/apiClient";
+import { useSEO } from "../../hooks/useSEO";
 
 export const HomeView: React.FC = () => {
+  useSEO({
+    title: "TravelVerse AI - Autonomous Travel OS",
+    description: "Discover, plan, and book optimized flight, hotel, and spatial VR travel itineraries with AI.",
+    path: "/"
+  });
+
   const { setModule, openVR, toggleAIConcierge } = useUIStore();
   const { currency, setSelectedPackage, setSelectedHotel, setSelectedFlight, setSelectedExperience, setCheckoutItem } =
     useTravelStore();

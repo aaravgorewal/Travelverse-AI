@@ -27,7 +27,15 @@ import { ExperienceAddToTripModal } from "./components/ExperienceAddToTripModal"
 import { ExperienceFilters } from "./components/ExperienceFilters";
 import { Button, Badge } from "../../components/ui";
 
+import { useSEO } from "../../hooks/useSEO";
+
 export const ExperiencesView: React.FC = () => {
+  useSEO({
+    title: "Curated Travel Activities & Experiences - TravelVerse AI",
+    description: "Explore local activities, excursions, and culinary tastings recommended by AI.",
+    path: "/experiences"
+  });
+
   const { currency, setSelectedExperience, setCheckoutItem } = useTravelStore();
   const { setModule, openAIWithPrompt } = useUIStore();
 

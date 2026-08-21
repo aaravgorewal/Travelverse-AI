@@ -101,7 +101,15 @@ I've drafted a scenic route covering Capri, Positano, and Ravello. We can arrang
   },
 ];
 
+import { useSEO } from "../../hooks/useSEO";
+
 export const AIPlannerView: React.FC = () => {
+  useSEO({
+    title: "Autonomous AI Trip Planner - TravelVerse AI",
+    description: "Build complete multi-day itineraries and get route suggestions calibrated by Gemini AI graph.",
+    path: "/ai"
+  });
+
   const { aiInitialPrompt, clearAIInitialPrompt } = useUIStore();
   const { activeTrip } = useTripStore();
   const { bookings: storeBookings } = useTravelStore();

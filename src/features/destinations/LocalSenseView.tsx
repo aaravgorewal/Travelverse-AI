@@ -46,7 +46,15 @@ const getDestinationData = (dest: string) => {
   };
 };
 
+import { useSEO } from "../../hooks/useSEO";
+
 export const LocalSenseView: React.FC = () => {
+  useSEO({
+    title: "Explore Global Destinations - TravelVerse AI",
+    description: "Discover cultural insights, local tips, and AI-recommended travel spots.",
+    path: "/destinations"
+  });
+
   const { selectedDestinationId } = useUIStore();
   const destination = selectedDestinationId || "Tokyo"; // fallback
   const data = getDestinationData(destination);

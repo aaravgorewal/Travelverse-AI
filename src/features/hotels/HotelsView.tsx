@@ -6,10 +6,17 @@ import { searchHotels, calculateStayPrice, SEED_COMPREHENSIVE_HOTELS } from "./h
 import { HotelSearchPage } from "./pages/HotelSearchPage";
 import { HotelResultsPage } from "./pages/HotelResultsPage";
 import { HotelDetailsPage } from "./pages/HotelDetailsPage";
+import { useSEO } from "../../hooks/useSEO";
 
 type HotelSubView = "search" | "results" | "details";
 
 export const HotelsView: React.FC = () => {
+  useSEO({
+    title: "Premium Hotels & Sanctuaries - TravelVerse AI",
+    description: "Search and reserve 5-star hotel rooms and luxury resorts verified by our B2B commission system.",
+    path: "/hotels"
+  });
+
   const { currency, setSelectedHotel, setCheckoutItem } = useTravelStore();
   const { setModule, openAIWithPrompt, openVR } = useUIStore();
 
