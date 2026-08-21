@@ -1,0 +1,6 @@
+{
+  "name": "TravelVerse AI",
+  "description": "AI-Powered End-to-End Global Travel Operating System, Trip Planner, Booking Engine, and VR Explorer.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
