@@ -7,10 +7,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS so the Vite frontend (React) can connect
+import os
+
+# Configure CORS so the Vite frontend (React) can connect securely
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Update for production
+    allow_origins=[frontend_url], # Locked down for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

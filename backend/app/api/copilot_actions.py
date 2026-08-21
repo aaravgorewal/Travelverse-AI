@@ -18,10 +18,13 @@ _copilot_service = CopilotService(router=_model_router, guard=_guard, deal_scope
 def get_copilot_service() -> CopilotService:
     return _copilot_service
 
+from app.core.security import require_agent
+
 @router.post("/chat", response_model=AIResponse)
 async def copilot_chat(
     request: CopilotChatRequest,
-    service: CopilotService = Depends(get_copilot_service)
+    service: CopilotService = Depends(get_copilot_service),
+    auth: dict = Depends(require_agent)
 ) -> AIResponse:
     """
     Agent Copilot endpoint.
@@ -54,7 +57,8 @@ def get_alert_iq_service() -> AlertIQService:
 @router.get("/alerts", response_model=AIResponse)
 async def get_alerts(
     agent_id: str,
-    service: AlertIQService = Depends(get_alert_iq_service)
+    service: AlertIQService = Depends(get_alert_iq_service),
+    auth: dict = Depends(require_agent)
 ) -> AIResponse:
     """
     Agent AlertIQ endpoint.
