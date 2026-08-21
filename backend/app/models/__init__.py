@@ -1,4 +1,5 @@
 from .base import BaseModel
+from .dataset import DatasetRegistry
 from .identity import User, Customer, Agent, Agency, CustomerPreference, AgentPreference
 from .trips import Trip, TripDay, Activity
 from .inventory import Destination, Location, Place, Flight, Hotel, Transfer, Experience
