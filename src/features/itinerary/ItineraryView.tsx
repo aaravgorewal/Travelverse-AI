@@ -18,10 +18,12 @@ import { useUIStore } from "../../stores/useUIStore";
 import { aiService } from "../../services";
 import { Button, Card, Badge } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
+import { useToast } from "../../components/ui/Toast";
 
 export const ItineraryView: React.FC = () => {
-  const { activeTrip } = useTripStore();
+  const { activeTrip, updateTrip } = useTripStore();
   const { setModule, toggleAIConcierge } = useUIStore();
+  const { showToast } = useToast();
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
   const [isOptimizing, setIsOptimizing] = useState(false);
 
@@ -40,9 +42,17 @@ export const ItineraryView: React.FC = () => {
   const handleOptimizeItinerary = async () => {
     setIsOptimizing(true);
     try {
-      await aiService.optimizeItinerary(activeTrip.id, activeTrip.days);
-    } catch {
-      // Handled seamlessly
+      const res = await aiService.optimizeItinerary(activeTrip!.id, activeTrip!.days);
+      if (res.optimizedDays && res.optimizedDays.length > 0) {
+        updateTrip({ ...activeTrip!, days: res.optimizedDays });
+        showToast({
+          title: "Itinerary Optimized",
+          message: `Saved ${res.timeSavedMinutes} min transit time and ${res.carbonSavedKg}kg CO₂2.`,
+          type: "success"
+        });
+      }
+    } catch (err: any) {
+      showToast({ title: "Optimization Failed", message: err.message || "Could not optimize itinerary. Please try again.", type: "error" });
     } finally {
       setIsOptimizing(false);
     }

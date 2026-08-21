@@ -34,6 +34,9 @@ import {
   Edit3,
 } from "lucide-react";
 import { TripPlan, TripDay, TripPlanFlight, TripPlanHotel, TripPlanTransport } from "../../../types";
+import { useToast } from "../../../components/ui/Toast";
+import { useUIStore } from "../../../stores/useUIStore";
+import { useTravelStore } from "../../../stores/useTravelStore";
 
 interface TripGenieDisplayProps {
   trip: TripPlan;
@@ -68,6 +71,9 @@ export function TripGenieDisplay({
   const [activeTab, setActiveTab] = useState<
     "all" | "summary" | "flights" | "hotels" | "activities" | "itinerary" | "transport" | "cost"
   >("all");
+  const { showToast } = useToast();
+  const { setModule } = useUIStore();
+  const { setCheckoutItem } = useTravelStore();
 
   const currentDay: TripDay | undefined = trip.days?.[selectedDayIndex] || trip.days?.[0];
 
@@ -573,7 +579,16 @@ export function TripGenieDisplay({
 
                   <button
                     onClick={() => {
-                      alert(`Selected ${hotel.name} for booking checkout!`);
+                      // BOOKING: sets checkout item and routes to payment module
+                      setCheckoutItem({
+                        type: "hotel",
+                        item: hotel as any,
+                        travelers: trip.travelersCount || 1,
+                        dates: { start: trip.startDate || "TBD", end: trip.endDate },
+                        totalPrice: hotel.totalPrice || hotel.nightlyPrice * (hotel.nights || trip.days.length)
+                      });
+                      showToast({ title: "Hotel Selected", message: `${hotel.name} added to checkout.`, type: "success" });
+                      setModule("payments");
                     }}
                     className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm"
                   >

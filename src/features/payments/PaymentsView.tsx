@@ -420,6 +420,11 @@ export const PaymentsView: React.FC = () => {
                 <div className="flex gap-4 pt-4">
                   <Button type="button" variant="outline" onClick={() => setModule("home")}>Return Home</Button>
                   <Button type="button" onClick={() => { setBookingStatus("idle"); setCurrentStep(5); }}>Return to Payment</Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
           </form>
         </div>
 

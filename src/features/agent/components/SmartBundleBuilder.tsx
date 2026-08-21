@@ -7,6 +7,7 @@ import { useUIStore } from "../../../stores/useUIStore";
 import { Button, Card, Badge, Modal } from "../../../components/ui";
 import { formatCurrency } from "../../../lib/utils";
 import { aiService } from "../../../services";
+import { useToast } from "../../../components/ui/Toast";
 
 interface BundleItem {
   id: string;
@@ -28,6 +29,7 @@ const MOCK_INITIAL_BUNDLE: BundleItem[] = [
 export const SmartBundleBuilder: React.FC = () => {
   const { currency, setCheckoutItem } = useTravelStore();
   const { setModule } = useUIStore();
+  const { showToast } = useToast();
   
   const [items, setItems] = useState<BundleItem[]>(MOCK_INITIAL_BUNDLE);
   const [globalMargin, setGlobalMargin] = useState<number>(15); // Global margin toggle
@@ -294,8 +296,8 @@ export const SmartBundleBuilder: React.FC = () => {
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => setShowShareModal(false)}>Cancel</Button>
               <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => {
-                alert("Quote sent successfully via email to client CRM record.");
                 setShowShareModal(false);
+                showToast({ title: "Quote Sent", message: "Quote sent to client CRM record.", type: "success" });
               }}>
                 <Send className="w-4 h-4 mr-2" /> Send Now
               </Button>

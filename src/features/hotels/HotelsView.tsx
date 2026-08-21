@@ -7,6 +7,7 @@ import { HotelSearchPage } from "./pages/HotelSearchPage";
 import { HotelResultsPage } from "./pages/HotelResultsPage";
 import { HotelDetailsPage } from "./pages/HotelDetailsPage";
 import { useSEO } from "../../hooks/useSEO";
+import { useToast } from "../../components/ui/Toast";
 
 type HotelSubView = "search" | "results" | "details";
 
@@ -19,6 +20,7 @@ export const HotelsView: React.FC = () => {
 
   const { currency, setSelectedHotel, setCheckoutItem } = useTravelStore();
   const { setModule, openAIWithPrompt, openVR } = useUIStore();
+  const { showToast } = useToast();
 
   const [subView, setSubView] = useState<HotelSubView>("search");
   const [selectedHotelDetail, setSelectedHotelDetail] = useState<HotelOffer | null>(null);
@@ -165,7 +167,7 @@ export const HotelsView: React.FC = () => {
       setComparedHotels(comparedHotels.filter((h) => h.id !== hotel.id));
     } else {
       if (comparedHotels.length >= 3) {
-        alert("You can compare up to 3 hotels at once.");
+        showToast({ title: "Compare Limit", message: "You can compare up to 3 hotels. Remove one first.", type: "error" });
         return;
       }
       setComparedHotels([...comparedHotels, hotel]);

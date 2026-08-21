@@ -7,6 +7,7 @@ import axios from "axios";
 import { documentService } from "../../services";
 import { TravelDocument } from "../../types";
 import { Button, Card, Badge, Modal, Input } from "../../components/ui";
+import { useToast } from "../../components/ui/Toast";
 
 export const DocumentsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"wallet" | "visa">("wallet");
@@ -40,8 +41,8 @@ export const DocumentsView: React.FC = () => {
     try {
       const data = await documentService.getDocuments();
       setDocuments(data);
-    } catch (err) {
-      console.error("Failed to load documents", err);
+    } catch (err: any) {
+      showToast({ title: "Vault Unavailable", message: err.message || "Could not load documents.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -50,6 +51,8 @@ export const DocumentsView: React.FC = () => {
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  const { showToast } = useToast();
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,36 +71,38 @@ export const DocumentsView: React.FC = () => {
     }, 150);
 
     try {
-      // Direct axios post or documentService call
-      const res = await axios.post("/api/documents/upload", {
-        title: uploadTitle || `${uploadType.toUpperCase()} - Elena Rostova`,
-        documentType: uploadType,
-        expiryDate: uploadExpiry
-      });
-      
+      // Build FormData for documentService upload
+      const formData = new FormData();
+      formData.append("title", uploadTitle || `${uploadType.toUpperCase()} Document`);
+      formData.append("documentType", uploadType);
+      formData.append("expiryDate", uploadExpiry);
+
+      const res = await documentService.uploadDocument(formData);
+
       clearInterval(interval);
       setUploadProgress(100);
-      
-      // Artificial delay to show completion
       await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setDocuments(prev => [...prev, res.data]);
+
+      setDocuments(prev => [...prev, res]);
       setShowUploadModal(false);
       setUploadTitle("");
-    } catch (err) {
-      console.error("Upload failed", err);
+      showToast({ title: "Document Uploaded", message: `${uploadType} uploaded to your vault.`, type: "success" });
+    } catch (err: any) {
+      clearInterval(interval);
+      showToast({ title: "Upload Failed", message: err.response?.data?.error || err.message || "Could not upload document.", type: "error" });
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to permanently delete this document?")) return;
+    if (!window.confirm("Permanently delete this document from your vault?")) return;
     try {
       await documentService.deleteDocument(id);
       setDocuments(prev => prev.filter(doc => doc.id !== id));
-    } catch (err) {
-      console.error("Failed to delete document", err);
+      showToast({ title: "Deleted", message: "Document removed from your vault.", type: "success" });
+    } catch (err: any) {
+      showToast({ title: "Delete Failed", message: err.message || "Could not delete document.", type: "error" });
     }
   };
 

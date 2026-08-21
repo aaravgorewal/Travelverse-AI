@@ -53,6 +53,8 @@ import {
 } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
 import { apiClient } from "../../services/apiClient";
+import { aiService } from "../../services/aiService";
+import { useToast } from "../../components/ui/Toast";
 import { useSEO } from "../../hooks/useSEO";
 
 export const HomeView: React.FC = () => {
@@ -66,6 +68,7 @@ export const HomeView: React.FC = () => {
   const { currency, setSelectedPackage, setSelectedHotel, setSelectedFlight, setSelectedExperience, setCheckoutItem } =
     useTravelStore();
   const { user } = useAuthStore();
+  const { showToast } = useToast();
 
   const userStyles = user?.travelStyles || (user?.travelPreferences?.travelStyle as string[]) || ["Luxury", "Culture"];
   const userCity = user?.homeCity || "San Francisco, USA";
@@ -135,7 +138,7 @@ export const HomeView: React.FC = () => {
     setModule("ai");
   };
 
-  // Handle Agent Copilot Quick Query
+  // Handle Agent Copilot Quick Query — uses real AI chat endpoint
   const handleCopilotSubmit = async (e?: React.FormEvent, customQuery?: string) => {
     if (e) e.preventDefault();
     const query = customQuery || copilotQuery;
@@ -143,23 +146,20 @@ export const HomeView: React.FC = () => {
 
     setCopilotLoading(true);
     try {
-      const res = await apiClient.post<any, any>("/v1/home/copilot-assist", { prompt: query });
-      if (res && res.result) {
-        setCopilotResponse(res.result);
-      }
-    } catch (err) {
-      console.error("Copilot request error:", err);
-      setCopilotResponse({
-        headline: "Travel Plan Calibrated",
-        analysis: `Analyzed flight availability and luxury stays for "${query}". Autonomous agent stands ready to book with optimal price protection.`,
-        recommendedAction: "Execute Itinerary Generation",
-        estimatedBudget: "$1,900 - $3,200",
-        suggestedPrompts: [
-          "Show day-by-day itinerary breakdown",
-          "Preview hotel rooms in 360° VR",
-          "Check visa rules & safety advisories",
-        ],
+      const res = await aiService.chat({
+        message: query,
+        conversationHistory: [],
+        agentPersona: "TravelVerse Copilot",
       });
+      setCopilotResponse({
+        headline: res.reply?.split(".")[0] || "Travel Plan Calibrated",
+        analysis: res.reply,
+        estimatedBudget: null,
+        suggestedPrompts: res.suggestedPrompts || [],
+      });
+    } catch (err: any) {
+      showToast({ title: "Copilot Unavailable", message: err.message || "AI assistant is currently unavailable.", type: "error" });
+      setCopilotResponse(null);
     } finally {
       setCopilotLoading(false);
     }

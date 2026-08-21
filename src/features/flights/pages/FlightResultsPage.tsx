@@ -25,6 +25,7 @@ import { FlightComparisonDrawer } from "../components/FlightComparisonDrawer";
 import { FlightAddToTripModal } from "../components/FlightAddToTripModal";
 import { MobileSidebarDrawer } from "../../../components/shared/MobileSidebarDrawer";
 import { Button, Card, Badge } from "../../../components/ui";
+import { useToast } from "../../../components/ui/Toast";
 import { formatCurrency } from "../../../lib/utils";
 
 interface FlightResultsPageProps {
@@ -148,13 +149,15 @@ export const FlightResultsPage: React.FC<FlightResultsPageProps> = ({
     return list;
   }, [flights, filters, activeSort]);
 
+  const { showToast } = useToast();
+
   // Comparison toggle handler (Max 3)
   const handleToggleCompare = (flight: FlightOffer) => {
     if (comparedFlights.some((f) => f.id === flight.id)) {
       setComparedFlights(comparedFlights.filter((f) => f.id !== flight.id));
     } else {
       if (comparedFlights.length >= 3) {
-        alert("You can compare a maximum of 3 flights at once. Please remove one first.");
+        showToast({ title: "Compare Limit", message: "You can compare up to 3 flights. Remove one first.", type: "error" });
         return;
       }
       setComparedFlights([...comparedFlights, flight]);

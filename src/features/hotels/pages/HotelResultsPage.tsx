@@ -21,6 +21,7 @@ import { HotelComparisonDrawer } from "../components/HotelComparisonDrawer";
 import { HotelAddToTripModal } from "../components/HotelAddToTripModal";
 import { HotelSearchForm } from "../components/HotelSearchForm";
 import { Button, Badge, Modal } from "../../../components/ui";
+import { useToast } from "../../../components/ui/Toast";
 
 interface HotelResultsPageProps {
   searchParams: HotelSearchParams;
@@ -53,12 +54,14 @@ export const HotelResultsPage: React.FC<HotelResultsPageProps> = ({
   const end = new Date(searchParams.checkOutDate || "2026-09-15").getTime();
   const nights = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 
+  const { showToast } = useToast();
+
   const handleToggleCompare = (hotel: HotelOffer) => {
     if (comparedHotels.some((h) => h.id === hotel.id)) {
       setComparedHotels(comparedHotels.filter((h) => h.id !== hotel.id));
     } else {
       if (comparedHotels.length >= 3) {
-        alert("You can compare up to 3 hotels simultaneously.");
+        showToast({ title: "Compare Limit", message: "You can compare up to 3 hotels. Remove one first.", type: "error" });
         return;
       }
       setComparedHotels([...comparedHotels, hotel]);

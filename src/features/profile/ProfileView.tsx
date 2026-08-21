@@ -8,6 +8,7 @@ import { useUIStore } from "../../stores/useUIStore";
 import { useI18nStore } from "../../stores/useI18nStore";
 import { authService } from "../../services";
 import { Button, Card, Badge, Input, Modal } from "../../components/ui";
+import { useToast } from "../../components/ui/Toast";
 
 interface Companion {
   id: string;
@@ -19,6 +20,7 @@ interface Companion {
 export const ProfileView: React.FC = () => {
   const { user, updateUser, logout } = useAuthStore();
   const { setModule } = useUIStore();
+  const { showToast } = useToast();
   
   const [activeTab, setActiveTab] = useState<
     "personal" | "preferences" | "travelers" | "payments" | "language" | "notifications" | "privacy" | "security"
@@ -78,7 +80,7 @@ export const ProfileView: React.FC = () => {
         name,
         passportNumber: passport
       });
-      alert("Personal Info updated successfully.");
+      showToast({ title: "Profile Updated", message: "Personal info saved successfully.", type: "success" });
     } finally {
       setIsSavingPersonal(false);
     }
@@ -91,7 +93,7 @@ export const ProfileView: React.FC = () => {
       preferredCabin: cabin,
       dietary
     });
-    alert("Travel preferences saved successfully.");
+    showToast({ title: "Preferences Saved", message: "Your travel preferences have been updated.", type: "success" });
   };
 
   const handleAddCompanion = (e: React.FormEvent) => {
@@ -114,7 +116,7 @@ export const ProfileView: React.FC = () => {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") {
-      alert("Please type 'DELETE' exactly to confirm deletion.");
+      showToast({ title: "Confirmation Required", message: "Please type DELETE exactly to confirm account deletion.", type: "error" });
       return;
     }
     setIsDeleting(true);
@@ -122,10 +124,8 @@ export const ProfileView: React.FC = () => {
       await authService.deleteAccount();
       logout();
       setModule("home");
-      alert("Your account has been deleted permanently.");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete account. Please try again.");
+    } catch (err: any) {
+      showToast({ title: "Deletion Failed", message: err.message || "Failed to delete account. Please try again.", type: "error" });
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
