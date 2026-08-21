@@ -10,6 +10,8 @@ class PulseAlert(BaseModel):
 
 class TravelPulseRequest(BaseModel):
     trip_id: str
+    trip: Dict[str, Any] = Field(default_factory=dict, description="The overall trip document")
+    bookings: List[Dict[str, Any]] = Field(default_factory=list, description="All bookings (flights, hotels, activities, transfers) associated with the trip")
     flight_status_payload: List[Dict[str, Any]] = Field(default_factory=list, description="Mocked live flight status data")
     weather_payload: List[Dict[str, Any]] = Field(default_factory=list, description="Mocked live weather warnings")
     system_alerts: List[Dict[str, Any]] = Field(default_factory=list, description="Other system generated alerts")

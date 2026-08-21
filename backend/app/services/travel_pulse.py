@@ -23,10 +23,11 @@ class TravelPulseService:
     You are TravelPulse for TRAVELVERSE AI. Your job is to explain the impact of detected travel events.
     
     CRITICAL RULES:
-    1. You are provided with a list of RAW EVENTS detected by the system.
-    2. DO NOT invent new alerts or events. You may only process the provided RAW EVENTS.
-    3. For each event, determine the severity (high, medium, low), explain the downstream impact, and suggest a recommended action.
-    4. Keep the exact 'event' string and 'source' string provided by the system.
+    1. You are provided with a list of RAW EVENTS deterministically detected by the backend system.
+    2. NEVER generate an alert or explanation without supporting data from the RAW EVENTS list.
+    3. DO NOT invent new events (e.g. do not guess a flight is delayed if it isn't in the raw list).
+    4. For each event, determine the severity (high, medium, low), explain the downstream impact, and suggest a recommended action.
+    5. Keep the exact 'event' string and 'source' string provided by the system.
     """
 
     def __init__(self, router: ModelRouter):
@@ -34,7 +35,7 @@ class TravelPulseService:
 
     def _run_deterministic_rules(self, request: TravelPulseRequest) -> List[Dict[str, str]]:
         """
-        Python rule engine to catch factual events.
+        Python rule engine to catch factual events from the trip and bookings.
         """
         raw_events = []
         
@@ -56,7 +57,67 @@ class TravelPulseService:
                     "source": "weather_provider"
                 })
                 
-        # Rule 3: Pass-through system alerts
+        # Advanced Rules using bookings and trip
+        bookings = request.bookings
+        flights = sorted([b for b in bookings if b.get("type") == "flight"], key=lambda x: x.get("departure_time", ""))
+        hotels = sorted([b for b in bookings if b.get("type") == "hotel"], key=lambda x: x.get("check_in", ""))
+        transfers = [b for b in bookings if b.get("type") == "transfer"]
+        
+        # Rule 3: Tight connection (gap < 90 mins)
+        for i in range(len(flights) - 1):
+            # Very simplistic MVP date parsing check, assuming ISO strings
+            f1_arr = flights[i].get("arrival_time")
+            f2_dep = flights[i+1].get("departure_time")
+            if f1_arr and f2_dep and f1_arr[:10] == f2_dep[:10]:
+                # In production, parse real datetimes and diff them. For MVP:
+                raw_events.append({
+                    "event": f"Tight connection detected between flights {flights[i].get('id')} and {flights[i+1].get('id')}.",
+                    "source": "trip_logic"
+                })
+                
+        # Rule 4: Missing transfer
+        for flight in flights:
+            arr_date = flight.get("arrival_time", "")[:10]
+            for hotel in hotels:
+                if hotel.get("check_in", "")[:10] == arr_date:
+                    # Check if there is a transfer on this date
+                    has_transfer = any(t.get("date", "")[:10] == arr_date for t in transfers)
+                    if not has_transfer:
+                        raw_events.append({
+                            "event": f"Missing transfer from airport to hotel on {arr_date}.",
+                            "source": "trip_logic"
+                        })
+                        
+        # Rule 5: Schedule conflict
+        activities = [b for b in bookings if b.get("type") == "activity"]
+        for act in activities:
+            act_date = act.get("date", "")[:10]
+            for flight in flights:
+                if flight.get("departure_time", "")[:10] == act_date:
+                    raw_events.append({
+                        "event": f"Potential schedule conflict between activity {act.get('id')} and flight {flight.get('id')}.",
+                        "source": "trip_logic"
+                    })
+                    
+        # Rule 6: Unusual itinerary gap (No hotel or activity for a date within trip range)
+        # Simplified for MVP
+        if request.trip.get("start_date") and request.trip.get("end_date"):
+            # Mocking a check
+            if not hotels and not activities:
+                 raw_events.append({
+                    "event": f"Unusual itinerary gap detected: Missing accommodations or activities.",
+                    "source": "trip_logic"
+                })
+                 
+        # Rule 7: Customer follow-up
+        if request.trip.get("end_date"):
+            # MVP mock string check
+            raw_events.append({
+                "event": f"Trip {request.trip_id} ends on {request.trip.get('end_date')}. Schedule follow-up.",
+                "source": "trip_logic"
+            })
+
+        # Rule 8: Pass-through system alerts
         for alert in request.system_alerts:
             raw_events.append({
                 "event": alert.get("message", "Unknown system alert"),
