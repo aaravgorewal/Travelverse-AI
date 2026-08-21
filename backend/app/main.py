@@ -12,11 +12,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from sqlalchemy import text
+from app.database.session import SessionLocal
+
 @app.get("/health")
 def health_check():
+    db_status = "unavailable"
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        db_status = "unavailable"
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
     return {
         "status": "ok",
-        "service": "travelverse-backend"
+        "service": "travelverse-backend",
+        "database": db_status
     }
 
 # Include routers
