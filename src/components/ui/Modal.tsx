@@ -60,6 +60,10 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Card */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
+        aria-describedby={description ? "modal-description" : undefined}
         className={cn(
           "relative w-full overflow-hidden rounded-3xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-slate-200 dark:border-slate-800 z-10 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
           sizeClasses[size],
@@ -87,18 +91,19 @@ export const Modal: React.FC<ModalProps> = ({
                 )}
               </div>
               {title && (
-                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                <h3 id="modal-title" className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                   {title}
                 </h3>
               )}
               {description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p id="modal-description" className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   {description}
                 </p>
               )}
             </div>
             <button
               onClick={onClose}
+              aria-label="Close modal"
               className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
