@@ -16,12 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/health")
+@app.get("/health")
 def health_check():
     return {
         "status": "ok",
-        "service": "TravelVerse AI Operating System (FastAPI)",
-        "aiConfigured": True # We will check the actual env variable later
+        "service": "travelverse-backend"
     }
 
 # We will mount routers here in Phase 2
