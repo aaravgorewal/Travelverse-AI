@@ -60,6 +60,7 @@ app.post(["/api/v1/ai/chat", "/api/ai/chat"], async (req, res) => {
     conversationHistory = [],
     tripContext = {},
     agentPersona = "Master Concierge",
+    language = req.headers["accept-language"] || "en",
   } = req.body;
 
   const {
@@ -96,6 +97,16 @@ Trip Context Details:
       const systemPrompt = `You are TRAVELVERSE AI (${agentPersona}), the central autonomous global travel intelligence engine.
 You are operating within the TravelVerse AI Workspace.
 ${contextSummary}
+
+Language Instructions:
+- Respond strictly in the language/dialect: ${
+        language.toString().toLowerCase().includes("hinglish") 
+          ? "Hinglish (Hindi language using the Latin alphabet/script instead of Devanagari, e.g. 'Aapka flight schedule and hotel details ready hain')" 
+          : language.toString().toLowerCase().includes("hi") 
+          ? "Hindi (Devanagari script)" 
+          : "English"
+      }.
+- CRITICAL EXEMPTION: Do NOT translate booking IDs (e.g. BK-xxxx), flight numbers (e.g. QA-88), currency codes or currency symbols (e.g. USD, INR, ₹, $), or canonical business entities (e.g. "Emirates", "Burj Al Arab"). Keep these strictly in their canonical form.
 
 Guidelines:
 - Give comprehensive, well-structured, inspiring, and actionable advice tailored directly to the user's trip context.

@@ -4,6 +4,7 @@ import {
   Loader2, Mic, MicOff, Volume2, VolumeX
 } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
+import { useI18nStore } from "../../stores/useI18nStore";
 import { aiService } from "../../services";
 import { Button, Badge } from "../ui";
 
@@ -197,6 +198,7 @@ export const AIConciergeDrawer: React.FC = () => {
         message: textToSend,
         conversationHistory: history,
         agentPersona: activePersona,
+        language: useI18nStore.getState().language,
       });
 
       const assistantMsg = {

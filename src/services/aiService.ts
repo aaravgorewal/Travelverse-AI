@@ -31,6 +31,7 @@ export interface ChatParams {
   conversationHistory?: { role: "user" | "assistant"; content: string; timestamp?: string }[];
   tripContext?: TripContextData;
   agentPersona?: string;
+  language?: string;
 }
 
 export interface ChatResponse {
@@ -295,6 +296,7 @@ export interface ConciergeChatParams {
   conversationHistory: { role: "user" | "assistant"; content: string }[];
   agentPersona?: string;
   destinationContext?: string;
+  language?: string;
 }
 
 export const aiService = {
@@ -413,6 +415,7 @@ export const aiService = {
       message: params.message,
       conversationHistory: params.conversationHistory,
       agentPersona: params.agentPersona || "Master Concierge",
+      language: params.language,
     }, options);
     return {
       reply: chatRes.reply,

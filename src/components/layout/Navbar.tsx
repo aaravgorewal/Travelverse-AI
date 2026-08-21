@@ -25,6 +25,7 @@ import {
 import { useUIStore } from "../../stores/useUIStore";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { useTravelStore, useNotificationStore } from "../../stores/useTravelStore";
+import { useI18nStore } from "../../stores/useI18nStore";
 import { AppModule, UserRole } from "../../types";
 import { APP_CONFIG } from "../../config/constants";
 import { Button, Badge } from "../ui";
@@ -45,16 +46,18 @@ export const Navbar: React.FC = () => {
     return <AgentNavbar />;
   }
 
+  const { t } = useI18nStore();
+
   const mainNavItems: { module: AppModule; label: string; icon: React.ReactNode }[] = [
-    { module: "home", label: "Discover", icon: <Compass className="w-4 h-4" /> },
-    { module: "ai", label: "AI Workspace", icon: <Sparkles className="w-4 h-4 text-purple-500" /> },
-    { module: "search", label: "Search", icon: <Search className="w-4 h-4 text-blue-500" /> },
-    { module: "flights", label: "Flights", icon: <Plane className="w-4 h-4" /> },
-    { module: "hotels", label: "Hotels", icon: <Building className="w-4 h-4" /> },
-    { module: "packages", label: "Packages", icon: <MapPin className="w-4 h-4" /> },
-    { module: "experiences", label: "Experiences", icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
-    { module: "vr", label: "VR 360°", icon: <Glasses className="w-4 h-4 text-indigo-500" /> },
-    { module: "trips", label: "My Trips", icon: <Briefcase className="w-4 h-4" /> },
+    { module: "home", label: t("discover"), icon: <Compass className="w-4 h-4" /> },
+    { module: "ai", label: t("aiWorkspace"), icon: <Sparkles className="w-4 h-4 text-purple-500" /> },
+    { module: "search", label: t("search"), icon: <Search className="w-4 h-4 text-blue-500" /> },
+    { module: "flights", label: t("flights"), icon: <Plane className="w-4 h-4" /> },
+    { module: "hotels", label: t("hotels"), icon: <Building className="w-4 h-4" /> },
+    { module: "packages", label: t("packages"), icon: <MapPin className="w-4 h-4" /> },
+    { module: "experiences", label: t("experiences"), icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+    { module: "vr", label: t("vrGallery"), icon: <Glasses className="w-4 h-4 text-indigo-500" /> },
+    { module: "trips", label: t("myTrips"), icon: <Briefcase className="w-4 h-4" /> },
     { module: "design-system", label: "Design System", icon: <Sparkles className="w-4 h-4 text-purple-500" /> },
   ];
 

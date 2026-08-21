@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { useUIStore } from "../../stores/useUIStore";
+import { useI18nStore } from "../../stores/useI18nStore";
 import { authService } from "../../services";
 import { Button, Card, Badge, Input, Modal } from "../../components/ui";
 
@@ -51,7 +52,7 @@ export const ProfileView: React.FC = () => {
   ]);
 
   // Language & Toggles
-  const [lang, setLang] = useState("English");
+  const { language, setLanguage, t } = useI18nStore();
   
   // Notification Toggles
   const [notifEmail, setNotifEmail] = useState(true);
@@ -132,14 +133,14 @@ export const ProfileView: React.FC = () => {
   };
 
   const tabsList = [
-    { id: "personal", name: "Personal Info", icon: <User className="w-4 h-4" /> },
-    { id: "preferences", name: "Travel Preferences", icon: <Sparkles className="w-4 h-4" /> },
-    { id: "travelers", name: "Saved Travelers", icon: <Users className="w-4 h-4" /> },
-    { id: "payments", name: "Payment Details", icon: <CreditCard className="w-4 h-4" /> },
+    { id: "personal", name: t("personalInfo"), icon: <User className="w-4 h-4" /> },
+    { id: "preferences", name: t("discover"), icon: <Sparkles className="w-4 h-4" /> },
+    { id: "travelers", name: t("savedTravelers"), icon: <Users className="w-4 h-4" /> },
+    { id: "payments", name: t("paymentPrefs"), icon: <CreditCard className="w-4 h-4" /> },
     { id: "language", name: "Language / Regional", icon: <Globe className="w-4 h-4" /> },
-    { id: "notifications", name: "Notifications", icon: <Bell className="w-4 h-4" /> },
+    { id: "notifications", name: t("notifications"), icon: <Bell className="w-4 h-4" /> },
     { id: "privacy", name: "Privacy", icon: <Shield className="w-4 h-4" /> },
-    { id: "security", name: "Security & Account", icon: <Key className="w-4 h-4" /> }
+    { id: "security", name: t("security"), icon: <Key className="w-4 h-4" /> }
   ];
 
   return (
@@ -385,11 +386,14 @@ export const ProfileView: React.FC = () => {
               <div className="space-y-4 text-xs max-w-sm">
                 <div>
                   <label className="text-xs font-bold text-slate-500 mb-1 block">Preferred Language</label>
-                  <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none font-bold">
-                    <option value="English">English (United States)</option>
-                    <option value="Japanese">日本語 (Japan)</option>
-                    <option value="French">Français (France)</option>
-                    <option value="Spanish">Español (Spain)</option>
+                  <select 
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value as any)} 
+                    className="w-full px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none font-bold"
+                  >
+                    <option value="en">English (United States)</option>
+                    <option value="hi">हिन्दी (India)</option>
+                    <option value="hinglish">Hinglish (India)</option>
                   </select>
                 </div>
               </div>
