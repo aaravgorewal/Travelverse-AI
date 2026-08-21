@@ -154,3 +154,37 @@ async def optimize_itinerary(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.smart_budget import BudgetOptimizationRequest
+from app.services.smart_budget import SmartBudgetService
+
+_smart_budget_service = SmartBudgetService(router=_model_router)
+
+def get_smart_budget_service() -> SmartBudgetService:
+    return _smart_budget_service
+
+@router.post("/optimize-budget", response_model=AIResponse)
+async def optimize_budget(
+    request: BudgetOptimizationRequest,
+    service: SmartBudgetService = Depends(get_smart_budget_service)
+) -> AIResponse:
+    """
+    SmartBudget endpoint.
+    Optimizes a budget using Python for math and Gemini for reasoning.
+    """
+    try:
+        result = await service.optimize(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="SmartBudget",
+            message="Your budget analysis is complete.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
