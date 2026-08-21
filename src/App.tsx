@@ -5,12 +5,12 @@ import { Navbar } from "./components/layout/Navbar";
 import { Footer } from "./components/layout/Footer";
 import { MobileBottomNav } from "./components/layout/MobileBottomNav";
 import { AIConciergeDrawer } from "./components/shared/AIConciergeDrawer";
-import { VRViewerModal } from "./components/shared/VRViewerModal";
+const VRViewerModal = React.lazy(() => import("./components/shared/VRViewerModal").then(module => ({ default: module.VRViewerModal })));
 import { OfflineGuardian } from "./components/shared/OfflineGuardian";
 import { DealScopeDrawer } from "./components/shared/DealScopeDrawer";
 import { GlobalSearchOverlay } from "./components/shared/GlobalSearchOverlay";
 
-// Feature modules
+// Feature modules (Synchronous for fast TTI)
 import { HomeView } from "./features/home/HomeView";
 import { SearchView } from "./features/search/SearchView";
 import { FlightsView } from "./features/flights/FlightsView";
@@ -19,24 +19,26 @@ import { PackagesView } from "./features/packages/PackagesView";
 import { ExperiencesView } from "./features/experiences/ExperiencesView";
 import { TripsView } from "./features/trips/TripsView";
 import { ItineraryView } from "./features/itinerary/ItineraryView";
-import { AIPlannerView } from "./features/ai/AIPlannerView";
-import { VRGalleryView } from "./features/vr/VRGalleryView";
 import { BookingsView } from "./features/bookings/BookingsView";
 import { PaymentsView } from "./features/payments/PaymentsView";
 import { DocumentsView } from "./features/documents/DocumentsView";
-import { AgentPortalView } from "./features/agent/AgentPortalView";
-import { CustomersView } from "./features/customers/CustomersView";
 import { SupportView } from "./features/support/SupportView";
 import { NotificationsView } from "./features/notifications/NotificationsView";
 import { ProfileView } from "./features/profile/ProfileView";
-import { AdminDashboardView } from "./features/admin/AdminDashboardView";
 import { AuthView } from "./features/auth/AuthView";
 import { OnboardingView } from "./features/onboarding/OnboardingView";
 import { DesignSystemView } from "./features/design-system/DesignSystemView";
 import { LocalSenseView } from "./features/destinations/LocalSenseView";
 import { TravelPulseView } from "./features/travelpulse/TravelPulseView";
+
+// Heavy Modules (Lazy Loaded)
+const AIPlannerView = React.lazy(() => import("./features/ai/AIPlannerView").then(module => ({ default: module.AIPlannerView })));
+const VRGalleryView = React.lazy(() => import("./features/vr/VRGalleryView").then(module => ({ default: module.VRGalleryView })));
+const AgentPortalView = React.lazy(() => import("./features/agent/AgentPortalView").then(module => ({ default: module.AgentPortalView })));
+const CustomersView = React.lazy(() => import("./features/customers/CustomersView").then(module => ({ default: module.CustomersView })));
+const AdminDashboardView = React.lazy(() => import("./features/admin/AdminDashboardView").then(module => ({ default: module.AdminDashboardView })));
 import { ToastProvider } from "./components/ui/Toast";
-import { Modal, Button } from "./components/ui";
+import { Modal, Button, PageSkeleton } from "./components/ui";
 import { ShieldAlert, LogIn, Lock } from "lucide-react";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 
@@ -172,7 +174,9 @@ export function App() {
         {/* Main Feature Viewport (Optimized for 1440px Desktop, 768px Tablet, 360px Mobile) */}
         <main className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 ${isB2BPortalActive ? 'pb-4' : 'pb-24 md:pb-12'} overflow-x-hidden min-w-0`}>
           <ErrorBoundary>
-            {renderModule()}
+            <React.Suspense fallback={<PageSkeleton />}>
+              {renderModule()}
+            </React.Suspense>
           </ErrorBoundary>
         </main>
 
@@ -182,8 +186,10 @@ export function App() {
         {/* Universal Floating AI Concierge Drawer */}
         <AIConciergeDrawer />
 
-        {/* Spatial 360 VR Viewer Overlay */}
-        <VRViewerModal />
+        {/* Spatial 360 VR Viewer Overlay (Lazy) */}
+        <React.Suspense fallback={null}>
+          <VRViewerModal />
+        </React.Suspense>
 
         {/* Offline Guardian PWA Monitor */}
         <OfflineGuardian />

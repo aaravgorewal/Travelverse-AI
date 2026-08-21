@@ -13,3 +13,4 @@ export * from "./Alert";
 export * from "./ProgressBar";
 export * from "./Avatar";
 export * from "./EmptyState";
+export * from "./OptimizedImage";
