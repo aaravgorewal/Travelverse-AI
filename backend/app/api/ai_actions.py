@@ -293,3 +293,37 @@ async def explain(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.explore_more import RecommendationRequest
+from app.services.explore_more import ExploreMoreService
+
+_explore_more_service = ExploreMoreService(router=_model_router)
+
+def get_explore_more_service() -> ExploreMoreService:
+    return _explore_more_service
+
+@router.post("/recommend", response_model=AIResponse)
+async def recommend(
+    request: RecommendationRequest,
+    service: ExploreMoreService = Depends(get_explore_more_service)
+) -> AIResponse:
+    """
+    ExploreMore endpoint.
+    Hyper-local recommendation engine grounded in Google Places data.
+    """
+    try:
+        result = await service.recommend(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="ExploreMore",
+            message=f"I found {len(result.recommendations)} personalized recommendations for you.",
+            data=result.model_dump(),
+            actions=[],
+            sources=["google_places"],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
