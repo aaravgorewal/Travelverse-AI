@@ -8,12 +8,12 @@ from app.ai.model_router import ModelRouter, TaskCategory
 from app.ai.intent_engine import IntentEngine, IntentResult
 from app.ai.grounding_guard import GroundingGuard
 from app.tools.registry import ToolRegistry
+from app.services.context_builder import ContextBuilder
+from app.services.rag.rag_service import RAGService
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database.session import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
-
-class HallucinationCheck(BaseModel):
-    is_hallucination: bool = Field(..., description="True if the response contains fabricated facts, prices, or locations not present in the context.")
-    reason: str = Field(..., description="Explanation of the verdict.")
 
 class AIActionDecision(BaseModel):
     response_text: str = Field(..., description="The natural language response to the user.")
@@ -33,35 +33,45 @@ class TravelAIOrchestrator:
         self.intent_engine = IntentEngine(router)
         self.tool_registry = tool_registry
         self.grounding_guard = GroundingGuard(router)
+        self.context_builder = ContextBuilder()
+        self.rag_service = RAGService()
 
-    async def execute(self, user_message: str, context: TravelContext) -> UniversalAIResponse:
+    async def execute(self, user_message: str, context: TravelContext, feature_override: Optional[str] = None) -> UniversalAIResponse:
         """Main execution pipeline."""
         
         # 1. Validate request
         self._validate_request(user_message, context)
         
-        # 2. Classify intent (delegated to IntentEngine)
-        intent_result = await self.intent_engine.classify(user_message, context.role)
-        intent = intent_result.intent
+        # 2. Classify intent (or force feature if explicitly called)
+        if feature_override:
+            intent = feature_override.lower().replace(" ", "_")
+            intent_result = IntentResult(intent=intent, required_tools=[], confidence=1.0)
+        else:
+            intent_result = await self.intent_engine.classify(user_message, context.role)
+            intent = intent_result.intent
         
-        # 3. Build context
-        db_context = self._build_context(context)
+        # 3. Build preliminary DB Context
+        db_context = self._fetch_db_context(context)
         
-        # 4. Determine required tools (from IntentEngine metadata)
+        # 4. Determine required tools
         tools = self._determine_required_tools(intent_result)
         
-        # 5. Retrieve RAG knowledge if needed
-        rag_knowledge = await self._retrieve_rag_knowledge(intent, user_message)
+        # 5. Retrieve RAG knowledge
+        rag_documents = await self._retrieve_rag_knowledge(intent, user_message, context.role)
         
-        # 6. Execute approved tools (permission-gated via ToolRegistry)
+        # 6. Execute approved tools
         tool_results = await self._execute_approved_tools(tools, user_message, db_context, context.role)
         
-        # 7. Construct grounded context
-        grounded_prompt = self._construct_grounded_context(
-            user_message=user_message,
-            db_context=db_context,
-            rag_knowledge=rag_knowledge,
-            tool_results=tool_results
+        # 7. Construct grounded context using ContextBuilder
+        grounded_prompt = self.context_builder.build_context(
+            user_request=user_message,
+            live_api_results=tool_results,
+            current_trip=db_context.get("trip_data"),
+            booking_data=db_context.get("booking_data"),
+            customer_preferences=context.preferences,
+            rag_documents=rag_documents,
+            user_profile=None,
+            destination_data=context.location_context
         )
         
         # 8. Call AI model
@@ -73,7 +83,6 @@ class TravelAIOrchestrator:
         # 10. Run hallucination guard
         guard_result = await self.grounding_guard.validate(ai_decision.response_text, grounded_prompt)
         
-        # If hallucination was detected, swap the text for the sanitized version
         if guard_result.is_hallucination:
             ai_decision.response_text = guard_result.sanitized_text
         
@@ -93,70 +102,59 @@ class TravelAIOrchestrator:
             intent=intent
         )
 
-    # --- Pipeline Steps Implementation ---
-
     def _validate_request(self, message: str, context: TravelContext):
         if not message.strip():
             raise ValueError("User message cannot be empty.")
         if not context.user_id or not context.role:
             raise ValueError("TravelContext must include user_id and role.")
 
-    def _build_context(self, context: TravelContext) -> Dict[str, Any]:
-        # In a real scenario, this fetches from the DB using Repositories based on context.active_trip_id etc.
+    def _fetch_db_context(self, context: TravelContext) -> Dict[str, Any]:
         return {
-            "user_role": context.role,
-            "preferences": context.preferences,
-            "location": context.location_context,
-            "trip_data": "DB Fetch Simulation" if context.active_trip_id else None
+            "trip_data": {"active_trip_id": context.active_trip_id} if context.active_trip_id else None,
+            "booking_data": None
         }
 
     def _determine_required_tools(self, intent_result: IntentResult) -> List[str]:
-        # Tools are now resolved from the static IntentEngine metadata, not AI hallucination.
         return intent_result.required_tools
 
-    async def _retrieve_rag_knowledge(self, intent: str, message: str) -> str:
-        # If intent is general info or planning, query pgvector.
-        if intent in ["general_chat", "trip_planning", "info"]:
-            # Simulated pgvector search
-            return "RAG Knowledge: Traveling to Japan requires a valid passport. Kyoto is famous for temples."
-        return ""
+    async def _retrieve_rag_knowledge(self, intent: str, message: str, role: str) -> List[Dict[str, Any]]:
+        # In a real app we would pass a DB session. Using AsyncSessionLocal here.
+        async with AsyncSessionLocal() as session:
+            try:
+                results = await self.rag_service.retrieve_context(
+                    session=session,
+                    query=message,
+                    user_role=role,
+                    top_k=5
+                )
+                return results
+            except Exception as e:
+                logger.error(f"RAG Retrieval failed: {e}")
+                return []
 
     async def _execute_approved_tools(self, tools: List[str], message: str, context: Dict[str, Any], user_role: str) -> Dict[str, Any]:
-        """Execute tools through the ToolRegistry, which validates permissions before dispatch."""
         results = {}
         for tool_name in tools:
             try:
                 result = await self.tool_registry.execute(tool_name, {"message": message, **context}, user_role)
                 results[tool_name] = result
             except PermissionError as e:
-                logger.warning(f"Permission denied for tool '{tool_name}': {e}")
                 results[tool_name] = {"status": "permission_denied", "error": str(e)}
             except ValueError as e:
-                logger.warning(f"Tool '{tool_name}' not found: {e}")
                 results[tool_name] = {"status": "not_found", "error": str(e)}
             except Exception as e:
-                logger.error(f"Tool '{tool_name}' execution failed: {e}")
                 results[tool_name] = {"status": "error", "error": str(e)}
         return results
 
-    def _construct_grounded_context(self, user_message: str, db_context: Dict[str, Any], rag_knowledge: str, tool_results: Dict[str, Any]) -> str:
-        return f"""
-        User Message: {user_message}
-        ---
-        Database Context: {json.dumps(db_context)}
-        ---
-        RAG Knowledge: {rag_knowledge}
-        ---
-        Tool Outputs: {json.dumps(tool_results)}
-        """
-
     async def _call_ai_model(self, intent: str, grounded_prompt: str, preferred_language: str) -> AIActionDecision:
-        # Route to complex reasoning if planning, otherwise simple chat.
-        category = TaskCategory.TRIP_PLANNING if intent == "trip_planning" else TaskCategory.SIMPLE_CHAT
+        # Route logic for different feature intents
+        category = TaskCategory.TRIP_PLANNING if "planning" in intent or intent in ["tripgenie", "smartroute"] else TaskCategory.SIMPLE_CHAT
         
         system_instruction = f"""
         You are TRAVELVERSE AI. Answer the user based strictly on the provided Context and Tool Outputs.
         Decide which UI widgets to show, and if any external systems need data payloads sent to them.
+        
+        FEATURE FOCUS: You are executing the '{intent}' feature. Adjust your persona and output to match.
         
         MULTILINGUAL RULES:
         1. You MUST respond to the user in {preferred_language}.
@@ -174,7 +172,6 @@ class TravelAIOrchestrator:
 
     def _validate_response(self, decision: AIActionDecision):
         if not decision.response_text:
-            logger.warning("AI generated an empty text response. Providing fallback.")
             decision.response_text = "I processed your request, but couldn't generate a text response."
 
     def _determine_actions(self, decision: AIActionDecision):
@@ -183,7 +180,6 @@ class TravelAIOrchestrator:
         return ui_actions, data_actions
 
     def _require_confirmation(self, decision: AIActionDecision, data_actions: List[DataAction]) -> bool:
-        # If the AI flagged it as financial/destructive, OR if specific dangerous payloads exist.
         if decision.is_destructive_or_financial:
             return True
         for action in data_actions:
@@ -192,9 +188,7 @@ class TravelAIOrchestrator:
         return False
 
     def _return_universal_response(self, text: str, ui_actions: List[UIAction], data_actions: List[DataAction], requires_confirmation: bool, hallucination_flag: bool, intent: str) -> UniversalAIResponse:
-        
         if hallucination_flag:
-            # Overwrite text if dangerous hallucination detected
             text = "I'm sorry, I cannot verify the exact details of that request securely. Please double check the live prices."
             
         return UniversalAIResponse(

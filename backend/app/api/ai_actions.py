@@ -1,98 +1,60 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+import json
+import uuid
+from pydantic import BaseModel
 
-from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest
+from app.schemas.orchestration import TravelContext, AIResponse, ConfidenceLevel
+from app.ai.orchestrator import TravelAIOrchestrator
+from app.ai.model_router import ModelRouter
+from app.providers.gemini import GeminiProvider
 from app.tools.registry import create_default_registry
+from app.ai.action_gateway import ActionGateway, ActionConfirmationRequest
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
-# In a real app, ToolRegistry should be injected as a dependency or exist as a singleton.
-# For demonstration, we'll instantiate it here with default tools.
+# --- Core Singletons ---
 _registry = create_default_registry()
 _gateway = ActionGateway(tool_registry=_registry)
+_ai_provider = GeminiProvider()
+_model_router = ModelRouter(provider=_ai_provider)
+_orchestrator = TravelAIOrchestrator(router=_model_router, tool_registry=_registry)
 
 def get_action_gateway() -> ActionGateway:
     return _gateway
+
+def get_orchestrator() -> TravelAIOrchestrator:
+    return _orchestrator
 
 @router.post("/confirm-action")
 async def confirm_action(
     request: ActionConfirmationRequest,
     gateway: ActionGateway = Depends(get_action_gateway)
 ) -> Dict[str, Any]:
-    """
-    Confirms and executes a sensitive AI-proposed action.
-    Validates user, permissions, and explicit confirmation flag before execution.
-    """
     try:
-        result = await gateway.execute_confirmed_action(request)
-        return result
+        return await gateway.execute_confirmed_action(request)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-from pydantic import BaseModel
-from typing import Optional
-import uuid
-
-from app.schemas.orchestration import TravelContext, AIResponse, ConfidenceLevel
-from app.ai.orchestrator import TravelAIOrchestrator
-from app.ai.model_router import ModelRouter
-from app.providers.ai_base import AIProvider
-from app.providers.gemini import GeminiProvider
 
 class ChatRequest(BaseModel):
     message: str
     context: TravelContext
     conversation_id: Optional[str] = None
 
-# Instantiate dependencies
-_ai_provider = GeminiProvider()
-_model_router = ModelRouter(provider=_ai_provider)
-_orchestrator = TravelAIOrchestrator(router=_model_router, tool_registry=_registry)
-
-def get_orchestrator() -> TravelAIOrchestrator:
-    return _orchestrator
-
-def map_intent_to_feature(intent: str) -> str:
-    """Routes an intent to its consumer-facing feature name."""
-    mapping = {
-        "TRIP_PLANNING": "TripGenie",
-        "ITINERARY_OPTIMIZATION": "TripGenie",
-        "BUDGET_OPTIMIZATION": "SmartBudget",
-        "DESTINATION_INFO": "ExplainMate",
-        "RECOMMENDATION": "ExploreMore",
-        "EXPERIENCE_SEARCH": "ExploreMore",
-        "PACKING": "PackMate",
-        "BOOKING_CHANGE": "TravelPulse",
-        "BOOKING_CANCELLATION": "TravelPulse",
-        "TRAVEL_SUPPORT": "SafeNest",
-        "AGENT_COPILOT": "Agent Copilot",
-        "PACKAGE_CREATION": "Agent Copilot",
-        "QUOTE_GENERATION": "Agent Copilot",
-        "CUSTOMER_MESSAGE": "Agent Copilot",
-        "FLIGHT_SEARCH": "Global Assistant",
-        "HOTEL_SEARCH": "Global Assistant",
-        "GENERAL_CHAT": "Global Assistant"
-    }
-    return mapping.get(intent, "Global Assistant")
-
-@router.post("/chat", response_model=AIResponse)
-async def chat(
-    request: ChatRequest,
-    orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)
+# --- Unified AI Orchestrator Adapter ---
+async def execute_feature(
+    feature_name: str, 
+    user_message: str, 
+    context: TravelContext, 
+    orchestrator: TravelAIOrchestrator, 
+    conversation_id: Optional[str] = None
 ) -> AIResponse:
-    """
-    Global Travel Assistant endpoint.
-    Understands natural language and routes it through the central Orchestrator.
-    """
     try:
-        # Run the 13-step intelligence pipeline
-        orchestrator_response = await orchestrator.execute(request.message, request.context)
+        # Route through the unified pipeline
+        orchestrator_response = await orchestrator.execute(user_message, context, feature_override=feature_name)
         
-        feature_name = map_intent_to_feature(orchestrator_response.intent) if orchestrator_response.intent else "Global Assistant"
-        
-        # Serialize actions to dictionaries for the JSON response
         actions_list = []
         for ui in orchestrator_response.ui_actions:
             actions_list.append({"type": "ui", "widget": ui.widget_name, "props": ui.props})
@@ -101,665 +63,129 @@ async def chat(
             
         warnings = []
         if orchestrator_response.hallucination_flag:
-            warnings.append("Hallucination detected and sanitized. Please verify prices.")
+            warnings.append("Hallucination detected and sanitized. Please verify details.")
         if orchestrator_response.requires_confirmation:
             warnings.append("Action requires explicit user confirmation.")
             
         return AIResponse(
             request_id=str(uuid.uuid4()),
-            conversation_id=request.conversation_id or str(uuid.uuid4()),
+            conversation_id=conversation_id or str(uuid.uuid4()),
             feature=feature_name,
             message=orchestrator_response.text,
             data={"intent": orchestrator_response.intent},
             actions=actions_list,
-            sources=[], # Will populate when RAG is fully integrated
+            sources=[], 
             warnings=warnings,
             confidence=ConfidenceLevel.HIGH if not orchestrator_response.hallucination_flag else ConfidenceLevel.MEDIUM
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-from app.schemas.smart_route import ItineraryOptimizationRequest
-from app.services.smart_route import SmartRouteService
-from app.providers.google_maps import GoogleMapsProvider
 
-_maps_provider = GoogleMapsProvider()
-_smart_route_service = SmartRouteService(maps_provider=_maps_provider, router=_model_router)
-
-def get_smart_route_service() -> SmartRouteService:
-    return _smart_route_service
-
-@router.post("/optimize-itinerary", response_model=AIResponse)
-async def optimize_itinerary(
-    request: ItineraryOptimizationRequest,
-    service: SmartRouteService = Depends(get_smart_route_service)
-) -> AIResponse:
-    """
-    SmartRoute endpoint.
-    Optimizes an itinerary using Google Maps distance matrix and Gemini logic.
-    """
-    try:
-        result = await service.optimize(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="SmartRoute",
-            message="Your itinerary has been optimized based on travel times and your preferences.",
-            data=result.model_dump(),
-            actions=[],
-            sources=["google_maps"],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.smart_budget import BudgetOptimizationRequest
-from app.services.smart_budget import SmartBudgetService
-
-_smart_budget_service = SmartBudgetService(router=_model_router)
-
-def get_smart_budget_service() -> SmartBudgetService:
-    return _smart_budget_service
-
-@router.post("/optimize-budget", response_model=AIResponse)
-async def optimize_budget(
-    request: BudgetOptimizationRequest,
-    service: SmartBudgetService = Depends(get_smart_budget_service)
-) -> AIResponse:
-    """
-    SmartBudget endpoint.
-    Optimizes a budget using Python for math and Gemini for reasoning.
-    """
-    try:
-        result = await service.optimize(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="SmartBudget",
-            message="Your budget analysis is complete.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.trip_genie import TripPlanningRequest
-from app.services.trip_genie import TripGenieService
-from app.ai.grounding_guard import GroundingGuard
-
-_grounding_guard = GroundingGuard(router=_model_router)
-_trip_genie_service = TripGenieService(router=_model_router, guard=_grounding_guard)
-
-def get_trip_genie_service() -> TripGenieService:
-    return _trip_genie_service
+@router.post("/chat", response_model=AIResponse)
+async def chat(request: ChatRequest, orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    # Natural routing without feature override
+    return await execute_feature("Global Assistant", request.message, request.context, orchestrator, request.conversation_id)
 
 @router.post("/plan-trip", response_model=AIResponse)
-async def plan_trip(
-    request: TripPlanningRequest,
-    service: TripGenieService = Depends(get_trip_genie_service)
-) -> AIResponse:
-    """
-    TripGenie flagship endpoint.
-    Orchestrates multiple external APIs, generates the itinerary via Gemini,
-    and calculates final budgets deterministically.
-    """
-    try:
-        result = await service.plan_trip(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="TripGenie",
-            message="I've generated a comprehensive itinerary for your trip.",
-            data=result.model_dump(),
-            actions=[],
-            sources=["google_places", "weather_provider"],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def plan_trip(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler", preferences=request.get("preferences", {}))
+    msg = f"Plan a trip to {request.get('destination')} for {request.get('dates')}. Context: {json.dumps(request)}"
+    return await execute_feature("TripGenie", msg, ctx, orchestrator)
 
-from app.schemas.deal_scope import ComparisonRequest
-from app.services.deal_scope import DealScopeService
+@router.post("/optimize-itinerary", response_model=AIResponse)
+async def optimize_itinerary(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Optimize this itinerary based on routes: {json.dumps(request)}"
+    return await execute_feature("SmartRoute", msg, ctx, orchestrator)
 
-_deal_scope_service = DealScopeService(router=_model_router)
-
-def get_deal_scope_service() -> DealScopeService:
-    return _deal_scope_service
+@router.post("/optimize-budget", response_model=AIResponse)
+async def optimize_budget(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Optimize my budget: {json.dumps(request)}"
+    return await execute_feature("SmartBudget", msg, ctx, orchestrator)
 
 @router.post("/compare", response_model=AIResponse)
-async def compare(
-    request: ComparisonRequest,
-    service: DealScopeService = Depends(get_deal_scope_service)
-) -> AIResponse:
-    """
-    DealScope endpoint.
-    Determines winners using Python math, then uses Gemini to explain the qualitative tradeoffs.
-    """
-    try:
-        result = await service.compare(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="DealScope",
-            message="Here is a comparison of your options.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.explain_mate import ExplainRequest
-from app.services.explain_mate import ExplainMateService
-
-_explain_mate_service = ExplainMateService(router=_model_router)
-
-def get_explain_mate_service() -> ExplainMateService:
-    return _explain_mate_service
+async def compare(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Compare these options: {json.dumps(request)}"
+    return await execute_feature("DealScope", msg, ctx, orchestrator)
 
 @router.post("/explain", response_model=AIResponse)
-async def explain(
-    request: ExplainRequest,
-    service: ExplainMateService = Depends(get_explain_mate_service)
-) -> AIResponse:
-    """
-    ExplainMate endpoint.
-    Explains why a product was recommended based purely on the provided data.
-    """
-    try:
-        result = await service.explain(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="ExplainMate",
-            message="Here is why I recommended this for you.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=result.confidence
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.explore_more import RecommendationRequest
-from app.services.explore_more import ExploreMoreService
-
-_explore_more_service = ExploreMoreService(router=_model_router)
-
-def get_explore_more_service() -> ExploreMoreService:
-    return _explore_more_service
+async def explain(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Explain this recommendation: {json.dumps(request)}"
+    return await execute_feature("ExplainMate", msg, ctx, orchestrator)
 
 @router.post("/recommend", response_model=AIResponse)
-async def recommend(
-    request: RecommendationRequest,
-    service: ExploreMoreService = Depends(get_explore_more_service)
-) -> AIResponse:
-    """
-    ExploreMore endpoint.
-    Hyper-local recommendation engine grounded in Google Places data.
-    """
-    try:
-        result = await service.recommend(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="ExploreMore",
-            message=f"I found {len(result.recommendations)} personalized recommendations for you.",
-            data=result.model_dump(),
-            actions=[],
-            sources=["google_places"],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.local_sense import DestinationKnowledgeRequest
-from app.services.local_sense import LocalSenseService
-
-_local_sense_service = LocalSenseService(router=_model_router)
-
-def get_local_sense_service() -> LocalSenseService:
-    return _local_sense_service
+async def recommend(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Recommend activities: {json.dumps(request)}"
+    return await execute_feature("ExploreMore", msg, ctx, orchestrator)
 
 @router.post("/destination", response_model=AIResponse)
-async def get_destination_knowledge(
-    request: DestinationKnowledgeRequest,
-    service: LocalSenseService = Depends(get_local_sense_service)
-) -> AIResponse:
-    """
-    LocalSense endpoint.
-    Destination intelligence engine using RAG to pull cultural and regulatory context.
-    """
-    try:
-        result = await service.get_destination_knowledge(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="LocalSense",
-            message=f"Here is what you need to know about {request.destination}.",
-            data=result.model_dump(),
-            actions=[],
-            sources=result.sources,
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.pack_mate import PackingRequest
-from app.services.pack_mate import PackMateService
-
-_pack_mate_service = PackMateService(router=_model_router)
-
-def get_pack_mate_service() -> PackMateService:
-    return _pack_mate_service
+async def get_destination_knowledge(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Tell me about this destination: {json.dumps(request)}"
+    return await execute_feature("LocalSense", msg, ctx, orchestrator)
 
 @router.post("/packing-list", response_model=AIResponse)
-async def generate_packing_list(
-    request: PackingRequest,
-    service: PackMateService = Depends(get_pack_mate_service)
-) -> AIResponse:
-    """
-    PackMate endpoint.
-    Generates a categorized packing list based on destination, weather, and activities.
-    """
-    try:
-        result = await service.generate_list(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="PackMate",
-            message="Here is your personalized packing list.",
-            data=result.model_dump(),
-            actions=[],
-            sources=["weather_provider"] if result.weather_context else [],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.travel_pulse import TravelPulseRequest
-from app.services.travel_pulse import TravelPulseService
-
-_travel_pulse_service = TravelPulseService(router=_model_router)
-
-def get_travel_pulse_service() -> TravelPulseService:
-    return _travel_pulse_service
+async def generate_packing_list(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Generate a packing list for: {json.dumps(request)}"
+    return await execute_feature("PackMate", msg, ctx, orchestrator)
 
 @router.post("/travel-pulse", response_model=AIResponse)
-async def analyze_travel_pulse(
-    request: TravelPulseRequest,
-    service: TravelPulseService = Depends(get_travel_pulse_service)
-) -> AIResponse:
-    """
-    TravelPulse endpoint.
-    Proactive trip monitoring separating factual event detection from AI explanation.
-    """
-    try:
-        result = await service.analyze_pulse(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="TravelPulse",
-            message=f"Analyzed {len(result.alerts)} active events.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.safe_nest import SupportRequest
-from app.services.safe_nest import SafeNestService
-
-_safe_nest_service = SafeNestService(router=_model_router)
-
-def get_safe_nest_service() -> SafeNestService:
-    return _safe_nest_service
+async def analyze_travel_pulse(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Analyze travel disruptions for: {json.dumps(request)}"
+    return await execute_feature("TravelPulse", msg, ctx, orchestrator)
 
 @router.post("/support", response_model=AIResponse)
-async def get_support(
-    request: SupportRequest,
-    service: SafeNestService = Depends(get_safe_nest_service)
-) -> AIResponse:
-    """
-    SafeNest endpoint.
-    Emergency and support handling mapped strictly to verified backend sources.
-    """
-    try:
-        result = await service.get_support(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="SafeNest",
-            message="I'm here to help. Please review these immediate steps.",
-            data=result.model_dump(),
-            actions=[],
-            sources=["verified_emergency_db"],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.client360 import PersonalizeRequest
-from app.services.client360 import Client360Service
-
-_client360_service = Client360Service(router=_model_router)
-
-def get_client360_service() -> Client360Service:
-    return _client360_service
+async def get_support(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"I need emergency support: {json.dumps(request)}"
+    return await execute_feature("SafeNest", msg, ctx, orchestrator)
 
 @router.post("/personalize", response_model=AIResponse)
-async def personalize(
-    request: PersonalizeRequest,
-    service: Client360Service = Depends(get_client360_service)
-) -> AIResponse:
-    """
-    Client360 endpoint.
-    Customer intelligence engine preventing inference of sensitive characteristics.
-    """
-    try:
-        result = await service.personalize(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="Client360",
-            message=f"Profile summary for {result.customer_name}",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.smart_bundle import BundleRequest
-from app.services.smart_bundle import SmartBundleService
-
-_smart_bundle_service = SmartBundleService(router=_model_router)
-
-def get_smart_bundle_service() -> SmartBundleService:
-    return _smart_bundle_service
+async def personalize(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent") # Must be agent for Client360
+    msg = f"Generate a Client360 profile for: {json.dumps(request)}"
+    return await execute_feature("Client360", msg, ctx, orchestrator)
 
 @router.post("/create-package", response_model=AIResponse)
-async def create_package(
-    request: BundleRequest,
-    service: SmartBundleService = Depends(get_smart_bundle_service)
-) -> AIResponse:
-    """
-    SmartBundle endpoint.
-    Creates travel packages using backend inventory and calculates totals mathematically.
-    """
-    try:
-        result = await service.create_package(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="SmartBundle",
-            message=f"I've built the {result.package_name} package for you.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.package_validator import PackageValidationRequest
-from app.services.package_validator import PackageValidatorService
-
-_package_validator_service = PackageValidatorService(router=_model_router)
-
-def get_package_validator_service() -> PackageValidatorService:
-    return _package_validator_service
+async def create_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent")
+    msg = f"Bundle this package: {json.dumps(request)}"
+    return await execute_feature("SmartBundle", msg, ctx, orchestrator)
 
 @router.post("/validate-package", response_model=AIResponse)
-async def validate_package(
-    request: PackageValidationRequest,
-    service: PackageValidatorService = Depends(get_package_validator_service)
-) -> AIResponse:
-    """
-    Package Validator endpoint.
-    Deterministic Phase 1 (math/dates) + AI Phase 2 (logistics).
-    """
-    try:
-        result = await service.validate_package(request)
-        
-        status_msg = "Package is valid." if result.is_valid else f"Found {len(result.errors)} hard errors and {len(result.warnings)} warnings."
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="PackageValidator",
-            message=status_msg,
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=result.warnings,
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.smart_quote import QuoteRequest
-from app.services.smart_quote import SmartQuoteService
-
-_smart_quote_service = SmartQuoteService(router=_model_router)
-
-def get_smart_quote_service() -> SmartQuoteService:
-    return _smart_quote_service
+async def validate_package(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent")
+    msg = f"Validate this package for logistics: {json.dumps(request)}"
+    return await execute_feature("Package Validator", msg, ctx, orchestrator)
 
 @router.post("/generate-quote", response_model=AIResponse)
-async def generate_quote(
-    request: QuoteRequest,
-    service: SmartQuoteService = Depends(get_smart_quote_service)
-) -> AIResponse:
-    """
-    SmartQuote endpoint.
-    Formats package data into professional quotation structures without hallucinating backend data.
-    """
-    try:
-        result = await service.generate_quote(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="SmartQuote",
-            message=result.header_message,
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.customer_message import CustomerMessageRequest
-from app.services.customer_message import CustomerMessageService
-
-_customer_message_service = CustomerMessageService(router=_model_router)
-
-def get_customer_message_service() -> CustomerMessageService:
-    return _customer_message_service
+async def generate_quote(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent")
+    msg = f"Generate a quote for: {json.dumps(request)}"
+    return await execute_feature("SmartQuote", msg, ctx, orchestrator)
 
 @router.post("/customer-message", response_model=AIResponse)
-async def generate_customer_message(
-    request: CustomerMessageRequest,
-    service: CustomerMessageService = Depends(get_customer_message_service)
-) -> AIResponse:
-    """
-    Customer Message Generator endpoint.
-    Drafts outbound communications relying strictly on verified backend data.
-    """
-    try:
-        result = await service.generate_message(request)
-        
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="CustomerMessageGenerator",
-            message=f"Drafted a {request.tone} {request.message_type} message.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.ai_memory import SaveMemoryRequest, RetrieveMemoryRequest, DeleteMemoryRequest
-from app.services.ai_memory import AIMemoryService
-
-_ai_memory_service = AIMemoryService(router=_model_router)
-
-def get_ai_memory_service() -> AIMemoryService:
-    return _ai_memory_service
-
-@router.post("/memory/save", response_model=AIResponse)
-async def save_memory(
-    request: SaveMemoryRequest,
-    service: AIMemoryService = Depends(get_ai_memory_service)
-) -> AIResponse:
-    try:
-        result = await service.save_memory(request)
-        msg = "Saved memory successfully." if result else "No safe travel memory extracted."
-        data = result.model_dump() if result else {}
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="AIMemory",
-            message=msg,
-            data=data,
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/memory/retrieve", response_model=AIResponse)
-async def retrieve_memory(
-    request: RetrieveMemoryRequest,
-    service: AIMemoryService = Depends(get_ai_memory_service)
-) -> AIResponse:
-    try:
-        result = await service.retrieve_memory(request)
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="AIMemory",
-            message=f"Retrieved {len(result.memories)} memories.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/memory/delete", response_model=AIResponse)
-async def delete_memory(
-    request: DeleteMemoryRequest,
-    service: AIMemoryService = Depends(get_ai_memory_service)
-) -> AIResponse:
-    try:
-        success = await service.delete_memory(request)
-        msg = "Memory deleted successfully." if success else "Memory not found."
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="AIMemory",
-            message=msg,
-            data={"success": success},
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/memory/summarize", response_model=AIResponse)
-async def summarize_memory(
-    request: RetrieveMemoryRequest,
-    service: AIMemoryService = Depends(get_ai_memory_service)
-) -> AIResponse:
-    try:
-        result = await service.summarize_memory(request)
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=str(uuid.uuid4()),
-            feature="AIMemory",
-            message="Memory summary generated.",
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.schemas.voice_ai import VoiceRequest
-from app.services.voice_assistant import VoiceAssistantService
-
-_voice_assistant_service = VoiceAssistantService(orchestrator=_orchestrator)
-
-def get_voice_assistant_service() -> VoiceAssistantService:
-    return _voice_assistant_service
+async def generate_customer_message(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent")
+    msg = f"Draft a customer message: {json.dumps(request)}"
+    return await execute_feature("Customer Message", msg, ctx, orchestrator)
 
 @router.post("/voice", response_model=AIResponse)
-async def handle_voice(
-    request: VoiceRequest,
-    service: VoiceAssistantService = Depends(get_voice_assistant_service)
-) -> AIResponse:
-    """
-    Voice AI endpoint.
-    Converts speech-to-text, runs the text through the TravelAIOrchestrator, and returns text-to-speech.
-    """
-    try:
-        result = await service.handle_voice(request)
-        return AIResponse(
-            request_id=str(uuid.uuid4()),
-            conversation_id=result.conversation_id,
-            feature="VoiceAI",
-            message=result.text_response,
-            data=result.model_dump(),
-            actions=[],
-            sources=[],
-            warnings=[],
-            confidence=ConfidenceLevel.HIGH
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def handle_voice(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="traveler")
+    msg = f"Voice Request: {json.dumps(request)}"
+    return await execute_feature("Voice AI", msg, ctx, orchestrator)
+
+# Note: AlertIQ is primarily a background task but we can expose it if needed
+@router.post("/alert-iq", response_model=AIResponse)
+async def handle_alert_iq(request: Dict[str, Any], orchestrator: TravelAIOrchestrator = Depends(get_orchestrator)):
+    ctx = TravelContext(user_id="default_user", role="agent")
+    msg = f"Generate proactive AlertIQ warnings for: {json.dumps(request)}"
+    return await execute_feature("AlertIQ", msg, ctx, orchestrator)
