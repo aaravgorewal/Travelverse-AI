@@ -149,3 +149,42 @@ export const aiAPI = {
     return data;
   }
 };
+
+// Backward compatibility types for the frontend components
+export interface GenerateTripPlanParams {
+  destination: string;
+  daysCount?: number;
+  dates?: any;
+  budget?: string | number;
+  travelers?: any;
+  interests?: any;
+  aiAction?: string;
+  baseTrip?: any;
+}
+
+export type TripContextData = any;
+export type ChatParams = any;
+export type RecommendParams = any;
+export type ExplainParams = any;
+export type OptimizeParams = any;
+export type ReduceCostParams = any;
+export type PersonalizeParams = any;
+export type PackingListParams = any;
+export type SupportParams = any;
+export type CompareParams = any;
+export type AIRequestOptions = any;
+
+export type ChatResponse = AIResponse;
+export type PlanTripResponse = AIResponse;
+export type RecommendResponse = AIResponse;
+export type ExplainResponse = AIResponse;
+export type OptimizeResponse = AIResponse;
+export type ReduceCostResponse = AIResponse;
+export type PersonalizeResponse = AIResponse;
+export type PackingListResponse = AIResponse;
+export type SupportResponse = AIResponse;
+export type CompareResponse = AIResponse;
+
+// Aliases for useTravelAI.ts compatibility
+(aiAPI as any).optimize = aiAPI.optimizeItinerary;
+(aiAPI as any).reduceCost = aiAPI.optimizeBudget;

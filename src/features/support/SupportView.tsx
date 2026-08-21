@@ -12,7 +12,7 @@ import {
   X,
   FileCheck
 } from "lucide-react";
-import { supportService, aiService } from "../../services";
+import { aiAPI } from "../../lib/api/ai";
 import { useTripStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
 import { Button, Card, Badge, Input } from "../../components/ui";
@@ -48,7 +48,7 @@ export const SupportView: React.FC = () => {
     setAiResponse(null);
 
     try {
-      const res = await aiService.support({
+      const res = await aiAPI.support({
         issueType: issueTopic,
         issueDescription: issueDesc,
         userLocation: activeTrip?.destination || "Unknown Location",

@@ -19,7 +19,7 @@ import { useTravelAI } from "../../hooks/useTravelAI";
 import { useTripStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
 import { TripPlan } from "../../types";
-import { GenerateTripPlanParams } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 import { TripGenieForm, TripGenieFormValues } from "./components/TripGenieForm";
 import { TripGenieDisplay } from "./components/TripGenieDisplay";
 import { TripGenieShareModal } from "./components/TripGenieShareModal";

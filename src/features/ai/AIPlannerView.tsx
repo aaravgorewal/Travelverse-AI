@@ -31,7 +31,7 @@ import {
 import { useTripStore, useTravelStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
 import { useTravelAI } from "../../hooks/useTravelAI";
-import { TripContextData } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 import {
   AIChatSession,
   AIChatMessageItem,

@@ -53,7 +53,7 @@ import {
 } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
 import { apiClient } from "../../services/apiClient";
-import { aiService } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 import { useToast } from "../../components/ui/Toast";
 import { useSEO } from "../../hooks/useSEO";
 
@@ -146,16 +146,17 @@ export const HomeView: React.FC = () => {
 
     setCopilotLoading(true);
     try {
-      const res = await aiService.chat({
+      const res = await aiAPI.chat({
+          context: { user_id: "1", role: "traveler" },
         message: query,
-        conversationHistory: [],
+        // conversationHistory: [],
         agentPersona: "TravelVerse Copilot",
       });
       setCopilotResponse({
-        headline: res.reply?.split(".")[0] || "Travel Plan Calibrated",
-        analysis: res.reply,
+        headline: res.message?.split(".")[0] || "Travel Plan Calibrated",
+        analysis: res.message,
         estimatedBudget: null,
-        suggestedPrompts: res.suggestedPrompts || [],
+        suggestedPrompts: res.data?.suggestedPrompts || [] || [],
       });
     } catch (err: any) {
       showToast({ title: "Copilot Unavailable", message: err.message || "AI assistant is currently unavailable.", type: "error" });

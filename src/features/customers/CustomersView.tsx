@@ -20,7 +20,7 @@ import { useTravelStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
 import { Button, Card, Badge } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
-import { aiService } from "../../services";
+import { aiAPI } from "../../lib/api/ai";
 
 interface CustomerRecord {
   id: string;
@@ -101,7 +101,7 @@ export const CustomersView: React.FC = () => {
     setIsPersonalizing(true);
     setPersonalizeError(null);
     try {
-      const res = await aiService.personalize({
+      const res = await aiAPI.personalize({
         userProfile: { name: customer.name, tier: customer.tier },
         travelPreferences: { 
           budget: customer.budgetTier, 
@@ -113,7 +113,7 @@ export const CustomersView: React.FC = () => {
         destination: "Agent's Choice" // Or could prompt for a destination
       });
       
-      const prompt = `Create a package for ${customer.name}. Use this AI context: ${res.personalizedAdvice}. Preferences: ${customer.budgetTier} budget, ${customer.dietaryPreference} food.`;
+      const prompt = `Create a package for ${customer.name}. Use this AI context: ${res.message}. Preferences: ${customer.budgetTier} budget, ${customer.dietaryPreference} food.`;
       
       // Send to Copilot
       window.dispatchEvent(new CustomEvent("agent-copilot-prompt", { detail: prompt }));

@@ -4,7 +4,7 @@ import {
   Calendar, Info, AlertOctagon, CheckCircle2 
 } from "lucide-react";
 import { notificationService } from "../../services/appServices";
-import { aiService } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 import { NotificationItem } from "../../types";
 import { useTripStore } from "../../stores/useTravelStore";
 import { Card, Button, Badge } from "../../components/ui";
@@ -94,11 +94,12 @@ export const TravelPulseView: React.FC = () => {
     const tripContextStr = activeTrip ? `Trip to ${activeTrip.destination} from ${activeTrip.startDate} to ${activeTrip.endDate}.` : "Unknown Trip.";
     
     try {
-      const res = await aiService.chat({
+      const res = await aiAPI.chat({
+        context: { user_id: "agent", role: "agent" },
         message: `I have the following travel alerts and updates:\n${contextStr}\n\nTrip Context: ${tripContextStr}\n\nWhat should I do? Provide concise, actionable advice.`,
         agentPersona: "Crisis Management Travel Concierge"
       });
-      setAiAdvice(res.reply);
+      setAiAdvice(res.message);
     } catch (err: any) {
       setAiAdvice("Failed to get AI advice: " + err.message);
     } finally {

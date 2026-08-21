@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Sparkles, Plus, Trash2, CheckCircle, Circle, RefreshCw, Settings2, Loader2, Save } from "lucide-react";
 import { useTripStore } from "../../../stores/useTravelStore";
 import { tripService } from "../../../services/appServices";
-import { aiService } from "../../../services/aiService";
+import { aiAPI } from "../../../lib/api/ai";
 import { Button, Card, Badge, Input } from "../../../components/ui";
 import { useToast } from "../../../components/ui/Toast";
 
@@ -50,7 +50,7 @@ export const PackMateAICard: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const res = await aiService.packingList({
+      const res = await aiAPI.packingList({
         destination: context.destination,
         durationDays: context.durationDays,
         weatherForecast: { temp: 25, condition: context.weather },

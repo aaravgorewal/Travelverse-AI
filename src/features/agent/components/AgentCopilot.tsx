@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Sparkles, Send, Plane, Building2, Map, Car, ArrowRight, Loader2, RefreshCw, PlusCircle, CheckCircle2 } from "lucide-react";
-import { aiService } from "../../../services";
+import { aiAPI } from "../../../lib/api/ai";
 import { TripPlan } from "../../../types";
 import { Button, Card, Badge, Input } from "../../../components/ui";
 import { useToast } from "../../../components/ui/Toast";
@@ -41,7 +41,7 @@ export const AgentCopilot: React.FC = () => {
     const travelersCount = familyMatch ? parseInt(familyMatch[1]) : 2;
 
     try {
-      const res = await aiService.planTrip({
+      const res = await aiAPI.planTrip({
         destination,
         durationDays,
         travelersCount,

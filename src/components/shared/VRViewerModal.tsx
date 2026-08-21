@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Volume2, VolumeX, Compass, Sparkles, MapPin, Eye } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
-import { aiService, analyticsService } from "../../services";
+import { aiAPI } from "../../lib/api/ai";
 import { Button, Badge } from "../ui";
 import { useToast } from "../ui/Toast";
 import { ReactPhotoSphereViewer } from "react-photo-sphere-viewer";
@@ -35,12 +35,12 @@ export const VRViewerModal: React.FC = () => {
     const contextDesc = hotspotContext ? hotspotContext.description : activeVRScene.destination;
 
     try {
-      const result = await aiService.generateVRNarration(
+      const result = await aiAPI.chat(
         activeVRScene.id,
         contextTitle,
         contextDesc
       );
-      setAiNarration(result.audioScript);
+      setAiNarration(result.message);
     } catch {
       setAiNarration(
         `Welcome to ${contextTitle}. You are currently gazing across pristine views of ${contextDesc}. Notice the extraordinary light reflections and natural architectural harmony. Enjoy this immersive preview of your next great journey.`

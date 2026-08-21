@@ -18,7 +18,7 @@ import {
   Edit2,
   X,
 } from "lucide-react";
-import { TripContextData } from "../../../services/aiService";
+import { aiAPI } from "../../../lib/api/ai";
 import { useTripStore, useTravelStore } from "../../../stores/useTravelStore";
 
 interface AITripContextPanelProps {

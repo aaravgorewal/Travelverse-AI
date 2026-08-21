@@ -1,28 +1,19 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  aiService,
-  ChatParams,
-  ChatResponse,
   GenerateTripPlanParams,
-  PlanTripResponse,
+  TripContextData,
+  ChatParams,
   RecommendParams,
-  RecommendResponse,
   ExplainParams,
-  ExplainResponse,
   OptimizeParams,
-  OptimizeResponse,
   ReduceCostParams,
-  ReduceCostResponse,
   PersonalizeParams,
-  PersonalizeResponse,
   PackingListParams,
-  PackingListResponse,
   SupportParams,
-  SupportResponse,
   CompareParams,
-  CompareResponse,
   AIRequestOptions,
-} from "../services/aiService";
+} from "../lib/api/ai";
+import { aiAPI as aiService } from "../lib/api/ai";
 
 export type AIActionName =
   | "chat"

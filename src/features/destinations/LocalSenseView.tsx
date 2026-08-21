@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Sparkles, MapPin, Globe2, Book, AlertTriangle, Coins, Utensils, Shield, Languages, Bus, ThumbsUp, RefreshCw, X, FileText, Compass, Send } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
-import { aiService } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 import { Button, Card, Badge, Input } from "../../components/ui";
 
 const DestinationMockData: Record<string, any> = {
@@ -74,22 +74,22 @@ export const LocalSenseView: React.FC = () => {
 
     try {
       if (action === "culture") {
-        const res = await aiService.explain({ topic: "Local Culture & Traditions", context: destination });
-        setAiResult(res.explanation + "\n\n**Key Takeaways:**\n" + res.keyTakeaways.join("\n- "));
+        const res = await aiAPI.explain({ topic: "Local Culture & Traditions", context: destination });
+        setAiResult(res.message + "\n\n**Key Takeaways:**\n" + res.data?.keyTakeaways || [].join("\n- "));
       } else if (action === "phrases") {
-        const res = await aiService.explain({ topic: "Essential Travel Phrases", context: destination });
-        setAiResult(res.explanation);
+        const res = await aiAPI.explain({ topic: "Essential Travel Phrases", context: destination });
+        setAiResult(res.message);
       } else if (action === "avoid") {
-        const res = await aiService.explain({ topic: "What to avoid doing", context: destination });
-        setAiResult(res.explanation + "\n\n**Cons to watch out for:**\n" + res.cons.join("\n- "));
+        const res = await aiAPI.explain({ topic: "What to avoid doing", context: destination });
+        setAiResult(res.explanation + "\n\n**Cons to watch out for:**\n" + res.data?.cons || [].join("\n- "));
       } else if (action === "recommendations") {
-        const res = await aiService.recommend({ destination, category: "all" });
-        const list = res.recommendations.map(r => `**${r.title}**: ${r.aiRationale}`).join("\n\n");
-        setAiResult(res.summary + "\n\n" + list);
+        const res = await aiAPI.recommend({ destination, category: "all" });
+        const list = res.data?.recommendations || [].map(r => `**${r.title}**: ${r.aiRationale}`).join("\n\n");
+        setAiResult(res.message + "\n\n" + list);
       } else if (action === "translate") {
         if (!translationText.trim()) throw new Error("Please enter text to translate.");
-        const res = await aiService.chat({ message: `Translate this to the local language of ${destination}: "${translationText}". Only provide the translation and pronunciation.` });
-        setAiResult(res.reply);
+        const res = await aiAPI.chat({ message: `Translate this to the local language of ${destination}: "${translationText}". Only provide the translation and pronunciation.`, context: { user_id: "agent", role: "agent", preferred_language: "English" } });
+        setAiResult(res.message);
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch AI insights. Please try again.");

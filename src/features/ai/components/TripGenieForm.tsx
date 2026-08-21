@@ -19,7 +19,7 @@ import {
   Globe,
   Loader2,
 } from "lucide-react";
-import { GenerateTripPlanParams } from "../../../services/aiService";
+import { aiAPI } from "../../../lib/api/ai";
 
 export interface TripGenieFormValues {
   destination: string;

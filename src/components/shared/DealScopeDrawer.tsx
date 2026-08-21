@@ -7,7 +7,7 @@ import { useAuthStore } from "../../stores/useAuthStore";
 import { useTripStore, useTravelStore } from "../../stores/useTravelStore";
 import { Button, Badge, Card } from "../ui";
 import { formatCurrency } from "../../lib/utils";
-import { aiService } from "../../services";
+import { aiAPI } from "../../lib/api/ai";
 
 export const DealScopeDrawer: React.FC = () => {
   const { isDealScopeOpen, closeDealScope, dealScopeData } = useUIStore();
@@ -63,14 +63,14 @@ export const DealScopeDrawer: React.FC = () => {
     setIsExplaining(true);
     setExplanation(null);
     try {
-      const res = await aiService.explain({
+      const res = await aiAPI.explain({
         topic: "Why is Smart Flex Plus the Best Value?",
         context: "Comparing 3 travel options based on price, duration, and cancellation policies.",
       });
       setExplanation({
-        rationale: res.explanation || "This option balances price with a significantly shorter duration and flexible cancellation.",
-        pros: res.pros || ["Saves 3 hours", "Free cancellation", "High AI match score"],
-        cons: res.cons || ["Slightly more expensive than basic"],
+        rationale: res.message || "This option balances price with a significantly shorter duration and flexible cancellation.",
+        pros: res.data?.pros || [] || ["Saves 3 hours", "Free cancellation", "High AI match score"],
+        cons: res.data?.cons || [] || ["Slightly more expensive than basic"],
       });
     } catch {
       setExplanation({

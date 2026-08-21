@@ -1,4 +1,4 @@
-import { TripContextData } from "../../services/aiService";
+import { aiAPI } from "../../lib/api/ai";
 
 export interface AIChatMessageItem {
   id: string;

@@ -6,7 +6,7 @@ import { useTravelStore } from "../../../stores/useTravelStore";
 import { useUIStore } from "../../../stores/useUIStore";
 import { Button, Card, Badge, Modal } from "../../../components/ui";
 import { formatCurrency } from "../../../lib/utils";
-import { aiService } from "../../../services";
+import { aiAPI } from "../../../lib/api/ai";
 import { useToast } from "../../../components/ui/Toast";
 
 interface BundleItem {

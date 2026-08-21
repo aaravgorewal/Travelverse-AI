@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
 import { useI18nStore } from "../../stores/useI18nStore";
-import { aiService, analyticsService } from "../../services";
+import { aiAPI } from "../../lib/api/ai";
 import { Button, Badge, AISkeletonLoader } from "../ui";
 
 type AgentPersona = "concierge" | "flight_scout" | "foodie" | "luxury_host" | "budget_hacker" | "visa_guide";
@@ -195,7 +195,7 @@ export const AIConciergeDrawer: React.FC = () => {
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiService.chatWithConcierge({
+      const response = await aiAPI.chat({
         message: textToSend,
         conversationHistory: history,
         agentPersona: activePersona,
@@ -205,8 +205,8 @@ export const AIConciergeDrawer: React.FC = () => {
       const assistantMsg = {
         id: `a-${Date.now()}`,
         role: "assistant" as const,
-        content: response.reply,
-        suggestedActions: response.suggestedActions,
+        content: response.message,
+        suggestedActions: response.data?.suggestedPrompts || [],
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
