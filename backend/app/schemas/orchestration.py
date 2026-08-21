@@ -10,6 +10,7 @@ class TravelContext(BaseModel):
     session_id: Optional[str] = None
     active_trip_id: Optional[str] = None
     location_context: Optional[str] = None
+    preferred_language: str = Field(default="English", description="e.g. English, Hindi, Hinglish")
     preferences: Optional[Dict[str, Any]] = Field(default_factory=dict)
     recent_searches: Optional[List[str]] = Field(default_factory=list)
 

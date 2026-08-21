@@ -65,7 +65,7 @@ class TravelAIOrchestrator:
         )
         
         # 8. Call AI model
-        ai_decision = await self._call_ai_model(intent, grounded_prompt)
+        ai_decision = await self._call_ai_model(intent, grounded_prompt, context.preferred_language)
         
         # 9. Validate response
         self._validate_response(ai_decision)
@@ -150,13 +150,18 @@ class TravelAIOrchestrator:
         Tool Outputs: {json.dumps(tool_results)}
         """
 
-    async def _call_ai_model(self, intent: str, grounded_prompt: str) -> AIActionDecision:
+    async def _call_ai_model(self, intent: str, grounded_prompt: str, preferred_language: str) -> AIActionDecision:
         # Route to complex reasoning if planning, otherwise simple chat.
         category = TaskCategory.TRIP_PLANNING if intent == "trip_planning" else TaskCategory.SIMPLE_CHAT
         
-        system_instruction = """
+        system_instruction = f"""
         You are TRAVELVERSE AI. Answer the user based strictly on the provided Context and Tool Outputs.
         Decide which UI widgets to show, and if any external systems need data payloads sent to them.
+        
+        MULTILINGUAL RULES:
+        1. You MUST respond to the user in {preferred_language}.
+        2. CRITICAL: You MUST NOT translate or modify structured identifiers. 
+           Booking IDs, flight numbers, hotel names, dates, currencies, and destination names MUST remain exactly as they appear in the Context.
         """
         
         result = await self.router.generate_structured(
