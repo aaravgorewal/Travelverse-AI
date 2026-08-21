@@ -259,3 +259,37 @@ async def compare(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.explain_mate import ExplainRequest
+from app.services.explain_mate import ExplainMateService
+
+_explain_mate_service = ExplainMateService(router=_model_router)
+
+def get_explain_mate_service() -> ExplainMateService:
+    return _explain_mate_service
+
+@router.post("/explain", response_model=AIResponse)
+async def explain(
+    request: ExplainRequest,
+    service: ExplainMateService = Depends(get_explain_mate_service)
+) -> AIResponse:
+    """
+    ExplainMate endpoint.
+    Explains why a product was recommended based purely on the provided data.
+    """
+    try:
+        result = await service.explain(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="ExplainMate",
+            message="Here is why I recommended this for you.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=result.confidence
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
