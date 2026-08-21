@@ -188,3 +188,40 @@ async def optimize_budget(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.trip_genie import TripPlanningRequest
+from app.services.trip_genie import TripGenieService
+from app.ai.grounding_guard import GroundingGuard
+
+_grounding_guard = GroundingGuard(router=_model_router)
+_trip_genie_service = TripGenieService(router=_model_router, guard=_grounding_guard)
+
+def get_trip_genie_service() -> TripGenieService:
+    return _trip_genie_service
+
+@router.post("/plan-trip", response_model=AIResponse)
+async def plan_trip(
+    request: TripPlanningRequest,
+    service: TripGenieService = Depends(get_trip_genie_service)
+) -> AIResponse:
+    """
+    TripGenie flagship endpoint.
+    Orchestrates multiple external APIs, generates the itinerary via Gemini,
+    and calculates final budgets deterministically.
+    """
+    try:
+        result = await service.plan_trip(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="TripGenie",
+            message="I've generated a comprehensive itinerary for your trip.",
+            data=result.model_dump(),
+            actions=[],
+            sources=["google_places", "weather_provider"],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
