@@ -395,3 +395,37 @@ async def generate_packing_list(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.travel_pulse import TravelPulseRequest
+from app.services.travel_pulse import TravelPulseService
+
+_travel_pulse_service = TravelPulseService(router=_model_router)
+
+def get_travel_pulse_service() -> TravelPulseService:
+    return _travel_pulse_service
+
+@router.post("/travel-pulse", response_model=AIResponse)
+async def analyze_travel_pulse(
+    request: TravelPulseRequest,
+    service: TravelPulseService = Depends(get_travel_pulse_service)
+) -> AIResponse:
+    """
+    TravelPulse endpoint.
+    Proactive trip monitoring separating factual event detection from AI explanation.
+    """
+    try:
+        result = await service.analyze_pulse(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="TravelPulse",
+            message=f"Analyzed {len(result.alerts)} active events.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
