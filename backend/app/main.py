@@ -23,4 +23,6 @@ def health_check():
         "service": "travelverse-backend"
     }
 
-# We will mount routers here in Phase 2
+# Mount AI routers
+from app.api.ai_actions import router as ai_actions_router
+app.include_router(ai_actions_router)
