@@ -567,3 +567,37 @@ async def validate_package(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.smart_quote import QuoteRequest
+from app.services.smart_quote import SmartQuoteService
+
+_smart_quote_service = SmartQuoteService(router=_model_router)
+
+def get_smart_quote_service() -> SmartQuoteService:
+    return _smart_quote_service
+
+@router.post("/generate-quote", response_model=AIResponse)
+async def generate_quote(
+    request: QuoteRequest,
+    service: SmartQuoteService = Depends(get_smart_quote_service)
+) -> AIResponse:
+    """
+    SmartQuote endpoint.
+    Formats package data into professional quotation structures without hallucinating backend data.
+    """
+    try:
+        result = await service.generate_quote(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="SmartQuote",
+            message=result.header_message,
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
