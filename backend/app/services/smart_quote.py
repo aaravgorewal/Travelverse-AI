@@ -20,6 +20,13 @@ class SmartQuoteService:
     2. ONLY use the 'confirmed_details' and 'price' provided in the raw package data.
     3. Generate a warm, welcoming tone suitable for a premium travel agency.
     4. Group items logically (e.g. all flights in one section, all hotels in another).
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

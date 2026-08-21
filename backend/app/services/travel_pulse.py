@@ -28,6 +28,13 @@ class TravelPulseService:
     3. DO NOT invent new events (e.g. do not guess a flight is delayed if it isn't in the raw list).
     4. For each event, determine the severity (high, medium, low), explain the downstream impact, and suggest a recommended action.
     5. Keep the exact 'event' string and 'source' string provided by the system.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

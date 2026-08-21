@@ -29,6 +29,13 @@ class DealScopeService:
     DO NOT invent prices. DO NOT change the winners.
     Your job is only to write the advantages, disadvantages, and tradeoffs for each candidate based on their features and metadata.
     Output EXACTLY the JSON schema requested.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

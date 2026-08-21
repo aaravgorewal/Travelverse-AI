@@ -21,6 +21,13 @@ class CustomerMessageService:
     2. ONLY use the data provided in the `trip_details` JSON.
     3. Adopt the requested tone (e.g. professional, warm, urgent).
     4. Clearly state the purpose of the message based on the `message_type`.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

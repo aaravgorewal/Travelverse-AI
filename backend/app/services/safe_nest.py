@@ -21,6 +21,13 @@ class SafeNestService:
     2. Only populate the `trusted_resources` array with exactly the contacts provided in the VERIFIED BACKEND SOURCES.
     3. If no verified contact is provided for the user's specific problem, advise them to use local official channels or search online, but DO NOT provide a fake number.
     4. Focus on safety first in `immediate_steps`.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

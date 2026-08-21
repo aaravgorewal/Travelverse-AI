@@ -29,6 +29,13 @@ class SmartBudgetService:
     You will be provided with the ALREADY CALCULATED totals, variance, and category percentages.
     DO NOT perform any math. Your job is only to reason about the tradeoffs based on the numbers provided.
     Provide actionable suggestions and identify non-essential items that could be cut or swapped if the user is over budget.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):

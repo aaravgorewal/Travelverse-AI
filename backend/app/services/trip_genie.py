@@ -32,6 +32,13 @@ class TripGenieService:
     1. Only use the provided Weather, Places, and Inventory data. DO NOT invent hotels or flights.
     2. DO NOT invent prices for live inventory (flights/hotels). Use the prices provided in the context, or mark as 'ai_estimate' if it's a general cost (like a taxi).
     3. Output the exact JSON structure requested. Do NOT calculate the total budget or day costs; Python will do that. Set day_cost to 0.0.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter, guard: GroundingGuard):

@@ -21,6 +21,13 @@ class PackMateService:
     1. Categorize strictly into: documents, clothing, electronics, activity_equipment, and essentials.
     2. DO NOT PROVIDE MEDICAL ADVICE. If suggesting first aid or medication, state "Basic first aid / personal medications" but do not prescribe specific drugs for conditions (like malaria pills). Add a warning that travelers should consult a doctor for specific medical needs.
     3. Tailor the list to the provided weather, activities, and traveler profile.
+    
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Do NOT invent or estimate prices, availability, or booking status. All financial and inventory claims MUST come from provided tool data or context.
+2. Do NOT invent routes, distances, or durations. Use routing data provided.
+3. Do NOT invent places, weather, or policies. Rely strictly on Trusted Data and RAG.
+4. If you lack the deterministic data to answer a specific factual claim, explicitly state 'Information Unavailable'. Do NOT guess.
     """
 
     def __init__(self, router: ModelRouter):
