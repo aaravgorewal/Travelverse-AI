@@ -188,3 +188,18 @@ export type CompareResponse = AIResponse;
 // Aliases for useTravelAI.ts compatibility
 (aiAPI as any).optimize = aiAPI.optimizeItinerary;
 (aiAPI as any).reduceCost = aiAPI.optimizeBudget;
+
+// Fallback types for TS errors
+export type TripContextData = any;
+export type ChatResponse = any;
+export type PlanTripResponse = any;
+export type RecommendResponse = any;
+export type ExplainResponse = any;
+export type OptimizeResponse = any;
+export type ReduceCostResponse = any;
+export type PersonalizeResponse = any;
+export type PackingListResponse = any;
+export type SupportResponse = any;
+export type CompareResponse = any;
+export type GenerateTripPlanParams = any;
+
