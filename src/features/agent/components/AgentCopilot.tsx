@@ -3,6 +3,7 @@ import { Sparkles, Send, Loader2, ArrowRight, CheckCircle2, AlertTriangle, Exter
 import { useAuthStore } from "../../../stores/useAuthStore";
 import { useToast } from "../../../components/ui/Toast";
 import { Button, Input, Card } from "../../../components/ui";
+import { aiAPI } from "../../../lib/api/ai";
 
 interface AIResponse {
   request_id: string;
@@ -56,24 +57,11 @@ export const AgentCopilot: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/copilot/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: userMsg.content,
-          conversation_id: conversationId,
-          // customer_id could be passed here if selected in UI
-        })
+      const data = await aiAPI.copilotChat({
+        message: userMsg.content,
+        agent_id: "agent", // Real ID handled by backend via JWT
+        conversation_id: conversationId || undefined
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to communicate with Copilot");
-      }
-
-      const data: AIResponse = await response.json();
       
       if (!conversationId) {
         setConversationId(data.conversation_id);
