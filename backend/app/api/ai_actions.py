@@ -531,3 +531,39 @@ async def create_package(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.package_validator import PackageValidationRequest
+from app.services.package_validator import PackageValidatorService
+
+_package_validator_service = PackageValidatorService(router=_model_router)
+
+def get_package_validator_service() -> PackageValidatorService:
+    return _package_validator_service
+
+@router.post("/validate-package", response_model=AIResponse)
+async def validate_package(
+    request: PackageValidationRequest,
+    service: PackageValidatorService = Depends(get_package_validator_service)
+) -> AIResponse:
+    """
+    Package Validator endpoint.
+    Deterministic Phase 1 (math/dates) + AI Phase 2 (logistics).
+    """
+    try:
+        result = await service.validate_package(request)
+        
+        status_msg = "Package is valid." if result.is_valid else f"Found {len(result.errors)} hard errors and {len(result.warnings)} warnings."
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="PackageValidator",
+            message=status_msg,
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
