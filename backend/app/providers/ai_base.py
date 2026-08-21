@@ -24,7 +24,7 @@ class AIProvider(ABC):
     """
     
     @abstractmethod
-    async def generate_text(self, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> str:
+    async def generate(self, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> str:
         """Generates a plain text response."""
         pass
 
