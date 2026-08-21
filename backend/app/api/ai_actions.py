@@ -497,3 +497,37 @@ async def personalize(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.smart_bundle import BundleRequest
+from app.services.smart_bundle import SmartBundleService
+
+_smart_bundle_service = SmartBundleService(router=_model_router)
+
+def get_smart_bundle_service() -> SmartBundleService:
+    return _smart_bundle_service
+
+@router.post("/create-package", response_model=AIResponse)
+async def create_package(
+    request: BundleRequest,
+    service: SmartBundleService = Depends(get_smart_bundle_service)
+) -> AIResponse:
+    """
+    SmartBundle endpoint.
+    Creates travel packages using backend inventory and calculates totals mathematically.
+    """
+    try:
+        result = await service.create_package(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="SmartBundle",
+            message=f"I've built the {result.package_name} package for you.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
