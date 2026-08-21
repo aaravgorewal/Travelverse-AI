@@ -44,11 +44,15 @@ class ConfiguredWeatherProvider(WeatherProvider):
         self.api_key = api_key or settings.WEATHER_API_KEY
         self.base_url = "https://api.weatherapi.com/v1" # Example default
         self.timeout = 10.0
+        # Fallback 1: Local cache to serve data if API is down
+        self._weather_cache: Dict[str, Any] = {}
 
     async def get_current_weather(self, lat: float, lng: float) -> Dict[str, Any]:
+        cache_key = f"current_{lat}_{lng}"
+        
         if not self.api_key:
-            logger.warning("WEATHER_API_KEY is missing. Returning data_unavailable.")
-            return UNAVAILABLE_WEATHER_RESPONSE
+            logger.warning("WEATHER_API_KEY is missing. Checking cache.")
+            return self._weather_cache.get(cache_key, UNAVAILABLE_WEATHER_RESPONSE)
 
         url = f"{self.base_url}/current.json"
         params = {
@@ -63,7 +67,7 @@ class ConfiguredWeatherProvider(WeatherProvider):
                 data = resp.json()
                 
                 # Standardize the payload
-                return {
+                result = {
                     "source": "weatherapi",
                     "live": True,
                     "available": True,
@@ -72,14 +76,22 @@ class ConfiguredWeatherProvider(WeatherProvider):
                     "condition": data.get("current", {}).get("condition", {}).get("text"),
                     "raw": data
                 }
+                self._weather_cache[cache_key] = result
+                return result
         except Exception as e:
             logger.error(f"Weather API failed for current weather: {e}")
+            if cache_key in self._weather_cache:
+                logger.info("Serving current weather from fallback cache.")
+                return self._weather_cache[cache_key]
+            # Fallback 2: Unavailable
             return UNAVAILABLE_WEATHER_RESPONSE
 
     async def get_forecast(self, lat: float, lng: float, days: int = 5) -> Dict[str, Any]:
+        cache_key = f"forecast_{lat}_{lng}_{days}"
+        
         if not self.api_key:
-            logger.warning("WEATHER_API_KEY is missing. Returning data_unavailable.")
-            return UNAVAILABLE_WEATHER_RESPONSE
+            logger.warning("WEATHER_API_KEY is missing. Checking cache.")
+            return self._weather_cache.get(cache_key, UNAVAILABLE_WEATHER_RESPONSE)
 
         url = f"{self.base_url}/forecast.json"
         params = {
@@ -94,13 +106,19 @@ class ConfiguredWeatherProvider(WeatherProvider):
                 resp.raise_for_status()
                 data = resp.json()
                 
-                return {
+                result = {
                     "source": "weatherapi",
                     "live": True,
                     "available": True,
                     "forecast_days": data.get("forecast", {}).get("forecastday", []),
                     "raw": data
                 }
+                self._weather_cache[cache_key] = result
+                return result
         except Exception as e:
             logger.error(f"Weather API failed for forecast: {e}")
+            if cache_key in self._weather_cache:
+                logger.info("Serving forecast from fallback cache.")
+                return self._weather_cache[cache_key]
+            # Fallback 2: Unavailable
             return UNAVAILABLE_WEATHER_RESPONSE

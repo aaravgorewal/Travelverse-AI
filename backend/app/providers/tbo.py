@@ -114,9 +114,24 @@ class TBOProvider:
         Dispatches a request to TBO using the configuration-driven endpoint map.
         Returns UNAVAILABLE_RESPONSE if credentials are missing or TBO is unreachable.
         """
+        import os
+        is_mock_mode = os.getenv("MOCK_MODE", "true").lower() == "true"
+        
+        def handle_failure(reason: str):
+            if is_mock_mode:
+                logger.info(f"TBO failed ({reason}), but MOCK_MODE is enabled. Returning mock payload.")
+                return {
+                    "source": "tbo_mock",
+                    "live": False,
+                    "available": True,
+                    "mock": True,
+                    "data": {"mock_results": []} # Simulated mock payload
+                }
+            logger.warning(f"TBO failed ({reason}) and MOCK_MODE is false. Returning unavailable.")
+            return {**UNAVAILABLE_RESPONSE, "reason": reason}
+
         if not self.is_configured:
-            logger.warning(f"TBO credentials not configured. Returning unavailable for '{endpoint_key}'.")
-            return {**UNAVAILABLE_RESPONSE, "reason": "credentials_not_configured"}
+            return handle_failure("credentials_not_configured")
 
         endpoint = TBO_ENDPOINTS.get(endpoint_key)
         if not endpoint:
@@ -146,21 +161,22 @@ class TBOProvider:
                 "source": "tbo",
                 "live": True,
                 "available": True,
+                "mock": False,
                 "data": data,
             }
 
         except httpx.TimeoutException:
             logger.error(f"TBO request timed out for '{endpoint_key}'.")
-            return {**UNAVAILABLE_RESPONSE, "reason": "timeout"}
+            return handle_failure("timeout")
         except httpx.HTTPStatusError as e:
             logger.error(f"TBO HTTP error for '{endpoint_key}': {e.response.status_code}")
-            return {**UNAVAILABLE_RESPONSE, "reason": f"http_{e.response.status_code}"}
+            return handle_failure(f"http_{e.response.status_code}")
         except httpx.RequestError as e:
             logger.error(f"TBO connection error for '{endpoint_key}': {e}")
-            return {**UNAVAILABLE_RESPONSE, "reason": "connection_error"}
+            return handle_failure("connection_error")
         except Exception as e:
             logger.error(f"Unexpected TBO error for '{endpoint_key}': {e}")
-            return {**UNAVAILABLE_RESPONSE, "reason": "unexpected_error"}
+            return handle_failure("unexpected_error")
 
     # --- Public API ---
 

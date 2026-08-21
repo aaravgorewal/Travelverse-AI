@@ -21,8 +21,9 @@ class ModelRouter:
     This prevents hardcoding model names in feature logic.
     """
     
-    def __init__(self, provider: AIProvider):
+    def __init__(self, provider: AIProvider, fallback_provider: Optional[AIProvider] = None):
         self.provider = provider
+        self.fallback_provider = fallback_provider
         
         # Map task categories to the configured models
         self.routing_table = {
@@ -45,20 +46,67 @@ class ModelRouter:
     async def generate_text(self, task_category: str, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> str:
         model = self._get_model_for_task(task_category)
         kwargs["model"] = model
-        return await self.provider.generate_text(prompt, system_instruction, **kwargs)
+        try:
+            return await self.provider.generate_text(prompt, system_instruction, **kwargs)
+        except Exception as e:
+            logger.error(f"Primary AI provider failed: {e}")
+            if self.fallback_provider:
+                try:
+                    logger.info("Attempting fallback AI provider...")
+                    return await self.fallback_provider.generate_text(prompt, system_instruction, **kwargs)
+                except Exception as fallback_e:
+                    logger.error(f"Fallback AI provider also failed: {fallback_e}")
+            return "The AI assistant is currently unavailable due to system issues."
 
     async def generate_structured(self, task_category: str, prompt: str, schema: Any, system_instruction: Optional[str] = None, **kwargs) -> Any:
         model = self._get_model_for_task(task_category)
         kwargs["model"] = model
-        return await self.provider.generate_structured(prompt, schema, system_instruction, **kwargs)
+        try:
+            return await self.provider.generate_structured(prompt, schema, system_instruction, **kwargs)
+        except Exception as e:
+            logger.error(f"Primary AI provider failed: {e}")
+            if self.fallback_provider:
+                try:
+                    logger.info("Attempting fallback AI provider...")
+                    return await self.fallback_provider.generate_structured(prompt, schema, system_instruction, **kwargs)
+                except Exception as fallback_e:
+                    logger.error(f"Fallback AI provider also failed: {fallback_e}")
+            
+            # For structured, we must try to return a valid blank schema or raise if impossible.
+            # But the requirement says "return a strictly controlled unavailable response".
+            # Raising a custom Exception that the orchestrator catches is usually best for structured data.
+            raise RuntimeError("AI Provider Unavailable")
 
     async def stream(self, task_category: str, prompt: str, system_instruction: Optional[str] = None, **kwargs) -> AsyncGenerator[str, None]:
         model = self._get_model_for_task(task_category)
         kwargs["model"] = model
-        async for chunk in self.provider.stream(prompt, system_instruction, **kwargs):
-            yield chunk
+        try:
+            async for chunk in self.provider.stream(prompt, system_instruction, **kwargs):
+                yield chunk
+        except Exception as e:
+            logger.error(f"Primary AI provider failed: {e}")
+            if self.fallback_provider:
+                try:
+                    logger.info("Attempting fallback AI provider stream...")
+                    async for chunk in self.fallback_provider.stream(prompt, system_instruction, **kwargs):
+                        yield chunk
+                except Exception as fallback_e:
+                    logger.error(f"Fallback AI provider also failed: {fallback_e}")
+                    yield " [AI Unavailable] "
+            else:
+                yield " [AI Unavailable] "
 
     async def generate_with_tools(self, task_category: str, prompt: str, tools: List[Any], system_instruction: Optional[str] = None, **kwargs) -> Any:
         model = self._get_model_for_task(task_category)
         kwargs["model"] = model
-        return await self.provider.generate_with_tools(prompt, tools, system_instruction, **kwargs)
+        try:
+            return await self.provider.generate_with_tools(prompt, tools, system_instruction, **kwargs)
+        except Exception as e:
+            logger.error(f"Primary AI provider failed: {e}")
+            if self.fallback_provider:
+                try:
+                    logger.info("Attempting fallback AI provider...")
+                    return await self.fallback_provider.generate_with_tools(prompt, tools, system_instruction, **kwargs)
+                except Exception as fallback_e:
+                    logger.error(f"Fallback AI provider also failed: {fallback_e}")
+            raise RuntimeError("AI Provider Unavailable")
