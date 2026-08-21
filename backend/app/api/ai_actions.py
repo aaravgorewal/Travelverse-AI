@@ -361,3 +361,37 @@ async def get_destination_knowledge(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.pack_mate import PackingRequest
+from app.services.pack_mate import PackMateService
+
+_pack_mate_service = PackMateService(router=_model_router)
+
+def get_pack_mate_service() -> PackMateService:
+    return _pack_mate_service
+
+@router.post("/packing-list", response_model=AIResponse)
+async def generate_packing_list(
+    request: PackingRequest,
+    service: PackMateService = Depends(get_pack_mate_service)
+) -> AIResponse:
+    """
+    PackMate endpoint.
+    Generates a categorized packing list based on destination, weather, and activities.
+    """
+    try:
+        result = await service.generate_list(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="PackMate",
+            message="Here is your personalized packing list.",
+            data=result.model_dump(),
+            actions=[],
+            sources=["weather_provider"] if result.weather_context else [],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
