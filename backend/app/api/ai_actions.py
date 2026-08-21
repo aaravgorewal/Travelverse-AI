@@ -463,3 +463,37 @@ async def get_support(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.client360 import PersonalizeRequest
+from app.services.client360 import Client360Service
+
+_client360_service = Client360Service(router=_model_router)
+
+def get_client360_service() -> Client360Service:
+    return _client360_service
+
+@router.post("/personalize", response_model=AIResponse)
+async def personalize(
+    request: PersonalizeRequest,
+    service: Client360Service = Depends(get_client360_service)
+) -> AIResponse:
+    """
+    Client360 endpoint.
+    Customer intelligence engine preventing inference of sensitive characteristics.
+    """
+    try:
+        result = await service.personalize(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="Client360",
+            message=f"Profile summary for {result.customer_name}",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
