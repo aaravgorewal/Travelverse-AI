@@ -429,3 +429,37 @@ async def analyze_travel_pulse(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.safe_nest import SupportRequest
+from app.services.safe_nest import SafeNestService
+
+_safe_nest_service = SafeNestService(router=_model_router)
+
+def get_safe_nest_service() -> SafeNestService:
+    return _safe_nest_service
+
+@router.post("/support", response_model=AIResponse)
+async def get_support(
+    request: SupportRequest,
+    service: SafeNestService = Depends(get_safe_nest_service)
+) -> AIResponse:
+    """
+    SafeNest endpoint.
+    Emergency and support handling mapped strictly to verified backend sources.
+    """
+    try:
+        result = await service.get_support(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="SafeNest",
+            message="I'm here to help. Please review these immediate steps.",
+            data=result.model_dump(),
+            actions=[],
+            sources=["verified_emergency_db"],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
