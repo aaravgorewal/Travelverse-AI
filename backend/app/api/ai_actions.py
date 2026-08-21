@@ -730,3 +730,36 @@ async def summarize_memory(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.voice_ai import VoiceRequest
+from app.services.voice_assistant import VoiceAssistantService
+
+_voice_assistant_service = VoiceAssistantService(orchestrator=_orchestrator)
+
+def get_voice_assistant_service() -> VoiceAssistantService:
+    return _voice_assistant_service
+
+@router.post("/voice", response_model=AIResponse)
+async def handle_voice(
+    request: VoiceRequest,
+    service: VoiceAssistantService = Depends(get_voice_assistant_service)
+) -> AIResponse:
+    """
+    Voice AI endpoint.
+    Converts speech-to-text, runs the text through the TravelAIOrchestrator, and returns text-to-speech.
+    """
+    try:
+        result = await service.handle_voice(request)
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=result.conversation_id,
+            feature="VoiceAI",
+            message=result.text_response,
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
