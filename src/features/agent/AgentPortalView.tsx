@@ -157,14 +157,10 @@ const AgentDashboard: React.FC = () => {
 
 import { AgentCopilot } from "./components/AgentCopilot";
 import { SmartBundleBuilder } from "./components/SmartBundleBuilder";
+import { DocuSwift } from "./components/DocuSwift";
+import { AgentAlerts } from "./components/AgentAlerts";
 
-const AgentAlerts = () => (
-  <Card className="p-8 text-center text-slate-500 h-full flex flex-col items-center justify-center">
-    <BellRing className="w-12 h-12 mb-4 text-amber-500" />
-    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Global Disruption Alerts</h3>
-    <p className="text-sm max-w-sm mt-2">Monitor all your clients currently in transit. No active disruptions or missed connections detected at this time.</p>
-  </Card>
-);
+// Removed local AgentAlerts placeholder
 
 const AgentAnalytics = () => (
   <Card className="p-8 text-center text-slate-500 h-full flex flex-col items-center justify-center">
@@ -206,6 +202,7 @@ export const AgentPortalView: React.FC = () => {
     { name: "Copilot", icon: <Sparkles className="w-4 h-4" /> },
     { name: "Customers", icon: <Users className="w-4 h-4" /> },
     { name: "SmartBundle", icon: <Package className="w-4 h-4 text-indigo-400" /> },
+    { name: "DocuSwift", icon: <FileText className="w-4 h-4 text-amber-500" /> },
     { name: "Flights", icon: <Plane className="w-4 h-4" /> },
     { name: "Hotels", icon: <Building2 className="w-4 h-4" /> },
     { name: "Packages", icon: <Package className="w-4 h-4" /> },
@@ -219,6 +216,7 @@ export const AgentPortalView: React.FC = () => {
       case "Dashboard": return <AgentDashboard />;
       case "Copilot": return <AgentCopilot />;
       case "SmartBundle": return <SmartBundleBuilder />;
+      case "DocuSwift": return <DocuSwift />;
       case "Customers": return <div className="text-sm"><CustomersView /></div>;
       case "Flights": return <div className="text-sm"><FlightsView /></div>;
       case "Hotels": return <div className="text-sm"><HotelsView /></div>;

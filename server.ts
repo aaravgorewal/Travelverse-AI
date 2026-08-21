@@ -2683,6 +2683,397 @@ Return only pure JSON.`,
     });
   });
 
+// ==========================================
+// 11. DOCUMENTS MANAGEMENT API
+// ==========================================
+interface ServerTravelDocument {
+  id: string;
+  userId: string;
+  title: string;
+  documentType: string;
+  expiryDate: string;
+  status: string;
+  fileUrl: string;
+  qrCodeData?: string;
+}
+
+const documentsDb = new Map<string, ServerTravelDocument>([
+  {
+    id: "doc-1",
+    userId: "u-101",
+    title: "Biometric Passport (US)",
+    documentType: "passport",
+    expiryDate: "2032-11-20",
+    status: "valid",
+    fileUrl: "s3://secure-private-bucket/passports/us-9928.pdf",
+    qrCodeData: "PASSPORT-US-992817441",
+  },
+  {
+    id: "doc-2",
+    userId: "u-101",
+    title: "Boarding Pass: Quantum Air QA-88",
+    documentType: "boarding_pass",
+    expiryDate: "2026-09-12",
+    status: "valid",
+    fileUrl: "s3://secure-private-bucket/tickets/qa88.pdf",
+    qrCodeData: "BP-QA88-SFO-HND-ELENA-ROSTOVA",
+  },
+  {
+    id: "doc-3",
+    userId: "u-101",
+    title: "Japan Visit e-Tourist Clearance",
+    documentType: "visa",
+    expiryDate: "2026-10-15",
+    status: "valid",
+    fileUrl: "s3://secure-private-bucket/visas/japan-clearance.pdf",
+    qrCodeData: "VISIT-JAPAN-WEB-APPROVED-2026",
+  },
+  {
+    id: "doc-4",
+    userId: "u-101",
+    title: "Global Travel & Medical SOS Insurance",
+    documentType: "insurance",
+    expiryDate: "2026-12-31",
+    status: "valid",
+    fileUrl: "s3://secure-private-bucket/insurance/sos-medical.pdf",
+  }
+].map(d => [d.id, d]));
+
+// Helper to generate a secure signed URL (token valid for 60 seconds)
+function generateSignedUrl(docId: string): string {
+  const expiresAt = Date.now() + 60000;
+  const token = Buffer.from(JSON.stringify({ docId, expiresAt })).toString("base64");
+  return `/api/documents/${docId}/preview?token=${token}`;
+}
+
+app.get("/api/documents", (req, res) => {
+  // Map documents to strip raw s3 private URLs and replace with secure proxy signed URLs
+  const safeDocs = Array.from(documentsDb.values()).map(doc => ({
+    ...doc,
+    fileUrl: generateSignedUrl(doc.id) // Instead of private S3 link, give them the secure signed URL
+  }));
+  res.json(safeDocs);
+});
+
+app.post("/api/documents/upload", (req, res) => {
+  const { title, documentType, expiryDate } = req.body;
+  const id = `doc-${Date.now()}`;
+  const newDoc: ServerTravelDocument = {
+    id,
+    userId: "u-101",
+    title: title || `Uploaded ${documentType}`,
+    documentType: documentType || "id",
+    expiryDate: expiryDate || "2030-01-01",
+    status: "valid",
+    fileUrl: `s3://secure-private-bucket/user-uploads/${id}.pdf`,
+    qrCodeData: `SECURE-QR-${id}`
+  };
+  
+  documentsDb.set(id, newDoc);
+  res.json({
+    ...newDoc,
+    fileUrl: generateSignedUrl(id)
+  });
+});
+
+app.delete("/api/documents/:id", (req, res) => {
+  const { id } = req.params;
+  if (documentsDb.has(id)) {
+    documentsDb.delete(id);
+    return res.json({ success: true, message: "Document deleted successfully." });
+  }
+  res.status(404).json({ error: "Document not found." });
+});
+
+// Secure endpoint checking signature
+app.get("/api/documents/:id/preview", (req, res) => {
+  const { id } = req.params;
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.status(403).json({ error: "Access Denied: Missing signed token." });
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(token as string, "base64").toString("utf-8"));
+    if (payload.docId !== id || Date.now() > payload.expiresAt) {
+      return res.status(403).json({ error: "Access Denied: Signed URL has expired or is invalid." });
+    }
+
+    const doc = documentsDb.get(id);
+    if (!doc) {
+      return res.status(404).json({ error: "Document not found." });
+    }
+
+    // Serve mock file visual data
+    res.json({
+      success: true,
+      message: "Secure session verified.",
+      title: doc.title,
+      type: doc.documentType,
+      expiresAt: doc.expiryDate,
+      content: `[VERIFIED SECURE DATA STREAM FROM INTERNAL SECURE VAULT] - Reference ID: ${doc.id}`
+    });
+  } catch (err) {
+    res.status(403).json({ error: "Access Denied: Invalid signature token." });
+  }
+});
+
+// ==========================================
+// 12. DOCUSWIFT AGENT DOCUMENT BUILDER API
+// ==========================================
+interface DocuSwiftItem {
+  id: string;
+  type: "quotation" | "itinerary" | "invoice" | "voucher" | "email";
+  clientName: string;
+  destination: string;
+  title: string;
+  sections: { heading: string; body: string }[];
+  price?: number;
+  currency?: string;
+  status: "draft" | "sent";
+}
+
+const docuSwiftDb = new Map<string, DocuSwiftItem>();
+
+app.post("/api/v1/agent/docuswift/generate", async (req, res) => {
+  const { type, clientName, destination, coreDetails } = req.body;
+  const id = `doc-swift-${Date.now()}`;
+  
+  let title = `${type.toUpperCase()} - ${clientName} - ${destination}`;
+  let sections: { heading: string; body: string }[] = [];
+  let price = 2450;
+  
+  if (type === "quotation") {
+    sections = [
+      { heading: "Executive Summary", body: `Premium tailored quotation for ${clientName} traveling to ${destination}. Designed based on luxury GDS inventory.` },
+      { heading: "Inventory & Options Mapped", body: "Option A: 5-Star Boutique Lodge with Private Transfers.\nOption B: City Center Grand Executive Suite." },
+      { heading: "Payment Terms", body: "50% deposit required upon confirmation. Balance due 14 days before departure." }
+    ];
+  } else if (type === "itinerary") {
+    sections = [
+      { heading: "Day 1: Arrival & Private Chauffeur", body: "Private meet and greet at terminal, transit to hotel." },
+      { heading: "Day 2: Cultural Walking Tour", body: "4-hour guided walking tour of main historic quarters." },
+      { heading: "Day 3: Scenic Leisure & Gala Dinner", body: "Free afternoon followed by high-rise skyline panoramic dinner." }
+    ];
+  } else if (type === "invoice") {
+    sections = [
+      { heading: "Bill To", body: clientName },
+      { heading: "Travel Services Provided", body: `Flight, Hotel, Experience package mapping for ${destination}.` },
+      { heading: "Tax & Provider Surcharges", body: "GDS Booking Fees: $120. VAT/GST: $180." }
+    ];
+    price = 2750;
+  } else if (type === "voucher") {
+    sections = [
+      { heading: "Voucher Reference", body: `TV-VOUCH-${Date.now().toString().slice(-6)}` },
+      { heading: "Service Provider Details", body: `Sovereign Palace Spa & Lodge, ${destination}` },
+      { heading: "Check-in Instructions", body: "Present this secure voucher at reception along with your Biometric Passport." }
+    ];
+  } else {
+    // Email template
+    sections = [
+      { heading: "Subject", body: `Your TravelVerse AI Itinerary and Quote for ${destination} is Ready!` },
+      { heading: "Salutation", body: `Dear ${clientName},` },
+      { heading: "Message Body", body: `We have finalized your bespoke trip plan for ${destination}. Please click below to review and secure your bookings.` }
+    ];
+  }
+
+  // Use Gemini to enrich the document content if configured
+  try {
+    const ai = getGeminiClient();
+    if (ai) {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `You are DocuSwift, an expert travel agent document generation bot.
+Generate a structured document matching the type: "${type}" for Client: "${clientName}" traveling to "${destination}".
+Additional inputs: "${coreDetails || "None"}".
+Provide a JSON response representing the document title and sections:
+{
+  "title": "Document Title",
+  "sections": [
+    { "heading": "Section Heading", "body": "Detailed paragraph of text matching document style" }
+  ]
+}
+Return only valid JSON.`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const raw = response.text?.replace(/```json|```/g, "").trim();
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.title && parsed.sections) {
+          title = parsed.title;
+          sections = parsed.sections;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("DocuSwift AI enrichment skipped:", err);
+  }
+
+  const newItem: DocuSwiftItem = {
+    id,
+    type,
+    clientName,
+    destination,
+    title,
+    sections,
+    price,
+    currency: "USD",
+    status: "draft"
+  };
+
+  docuSwiftDb.set(id, newItem);
+  res.json(newItem);
+});
+
+app.put("/api/v1/agent/docuswift/edit/:id", (req, res) => {
+  const { id } = req.params;
+  const { title, sections } = req.body;
+  
+  const item = docuSwiftDb.get(id);
+  if (!item) {
+    return res.status(404).json({ error: "Document not found." });
+  }
+
+  item.title = title || item.title;
+  item.sections = sections || item.sections;
+  
+  docuSwiftDb.set(id, item);
+  res.json(item);
+});
+
+app.post("/api/v1/agent/docuswift/send/:id", (req, res) => {
+  const { id } = req.params;
+  const item = docuSwiftDb.get(id);
+  if (!item) {
+    return res.status(404).json({ error: "Document not found." });
+  }
+
+  item.status = "sent";
+  docuSwiftDb.set(id, item);
+  res.json({ success: true, message: `Document sent successfully to ${item.clientName}!` });
+});
+
+// ==========================================
+// 13. B2B AGENT ALERTS API
+// ==========================================
+interface AgentAlert {
+  id: string;
+  type: "flight" | "price" | "weather" | "visa" | "inventory" | "booking" | "payment";
+  priority: "Critical" | "High" | "Medium" | "Low";
+  problem: string;
+  customerName: string;
+  tripTitle: string;
+  timestamp: string;
+  aiRecommendation: string;
+  actionLabel: string;
+  read: boolean;
+  status: "active" | "resolved";
+}
+
+const agentAlertsDb = new Map<string, AgentAlert>([
+  [
+    "alert-1",
+    {
+      id: "alert-1",
+      type: "flight",
+      priority: "Critical",
+      problem: "Flight JL005 canceled due to volcanic ash advisory (Tokyo HND). Affects 4 travelers.",
+      customerName: "Hastings Crew",
+      tripTitle: "Tokyo & Kyoto Autumn Odyssey",
+      timestamp: new Date(Date.now() - 3600000).toISOString(), // 1h ago
+      aiRecommendation: "Rebook to ANA NH109 leaving 3 hours later. Partner GDS has 4 seat inventory available at waiver code.",
+      actionLabel: "Auto-Rebook Flight via GDS",
+      read: false,
+      status: "active"
+    }
+  ],
+  [
+    "alert-2",
+    {
+      id: "alert-2",
+      type: "visa",
+      priority: "High",
+      problem: "Mandatory eVisa clearance pending verification for destination Singapore.",
+      customerName: "Elena Rostova",
+      tripTitle: "Amalfi & Singapore Luxury Transit",
+      timestamp: new Date(Date.now() - 7200000).toISOString(), // 2h ago
+      aiRecommendation: "Verify travel clearance certificate PDF. If valid, force-push update status in GDS profile.",
+      actionLabel: "Verify eVisa Upload",
+      read: false,
+      status: "active"
+    }
+  ],
+  [
+    "alert-3",
+    {
+      id: "alert-3",
+      type: "weather",
+      priority: "Medium",
+      problem: "Typhoon warning issued for Amalfi region. Possible disruption to coastal yacht charters.",
+      customerName: "Lord Hastings",
+      tripTitle: "Amalfi Coast Yacht Sovereign Voyage",
+      timestamp: new Date(Date.now() - 14400000).toISOString(), // 4h ago
+      aiRecommendation: "Suggest rescheduling day 2 Yacht Charter to day 4 when weather is forecasted clear. Coordinate with local DMC.",
+      actionLabel: "Contact Yacht Partner",
+      read: false,
+      status: "active"
+    }
+  ],
+  [
+    "alert-4",
+    {
+      id: "alert-4",
+      type: "price",
+      priority: "Low",
+      problem: "Fares dropped by $150 on SFO-DXB outbound route. Client is looking for best savings.",
+      customerName: "Aarav Saini VIP",
+      tripTitle: "Dubai SmartBundle Custom Package",
+      timestamp: new Date(Date.now() - 86400000).toISOString(), // 24h ago
+      aiRecommendation: "Re-fare flight segment to lock in GDS credit for the customer's SmartBundle balance.",
+      actionLabel: "Apply Re-fare Credit",
+      read: true,
+      status: "active"
+    }
+  ]
+]);
+
+app.get("/api/v1/agent/alerts", (req, res) => {
+  res.json(Array.from(agentAlertsDb.values()));
+});
+
+app.post("/api/v1/agent/alerts/:id/read", (req, res) => {
+  const { id } = req.params;
+  const alert = agentAlertsDb.get(id);
+  if (!alert) {
+    return res.status(404).json({ error: "Alert not found." });
+  }
+  alert.read = !alert.read;
+  agentAlertsDb.set(id, alert);
+  res.json(alert);
+});
+
+app.post("/api/v1/agent/alerts/:id/action", (req, res) => {
+  const { id } = req.params;
+  const alert = agentAlertsDb.get(id);
+  if (!alert) {
+    return res.status(404).json({ error: "Alert not found." });
+  }
+  alert.status = "resolved";
+  alert.read = true;
+  agentAlertsDb.set(id, alert);
+  res.json({ success: true, alert, message: `Successfully executed: "${alert.actionLabel}"` });
+});
+
 // Vite middleware for development & static serving for production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

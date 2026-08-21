@@ -86,6 +86,10 @@ export const documentService = {
   async checkVisaRequirements(passportCountry: string, destinationCountry: string): Promise<any> {
     return apiClient.post("/documents/visa-check", { passportCountry, destinationCountry });
   },
+
+  async deleteDocument(id: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.delete(`/documents/${id}`);
+  },
 };
 
 export const supportService = {
