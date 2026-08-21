@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.schemas.orchestration import TravelContext, UniversalAIResponse, UIAction, DataAction
 from app.ai.model_router import ModelRouter, TaskCategory
 from app.ai.intent_engine import IntentEngine, IntentResult
+from app.ai.grounding_guard import GroundingGuard
 from app.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class TravelAIOrchestrator:
         self.router = router
         self.intent_engine = IntentEngine(router)
         self.tool_registry = tool_registry
+        self.grounding_guard = GroundingGuard(router)
 
     async def execute(self, user_message: str, context: TravelContext) -> UniversalAIResponse:
         """Main execution pipeline."""
@@ -69,7 +71,11 @@ class TravelAIOrchestrator:
         self._validate_response(ai_decision)
         
         # 10. Run hallucination guard
-        hallucination_check = await self._run_hallucination_guard(ai_decision.response_text, grounded_prompt)
+        guard_result = await self.grounding_guard.validate(ai_decision.response_text, grounded_prompt)
+        
+        # If hallucination was detected, swap the text for the sanitized version
+        if guard_result.is_hallucination:
+            ai_decision.response_text = guard_result.sanitized_text
         
         # 11. Determine actions
         ui_actions, data_actions = self._determine_actions(ai_decision)
@@ -83,7 +89,7 @@ class TravelAIOrchestrator:
             ui_actions=ui_actions,
             data_actions=data_actions,
             requires_confirmation=requires_confirmation,
-            hallucination_flag=hallucination_check.is_hallucination,
+            hallucination_flag=guard_result.is_hallucination,
             intent=intent
         )
 
@@ -165,18 +171,6 @@ class TravelAIOrchestrator:
         if not decision.response_text:
             logger.warning("AI generated an empty text response. Providing fallback.")
             decision.response_text = "I processed your request, but couldn't generate a text response."
-
-    async def _run_hallucination_guard(self, ai_response: str, context: str) -> HallucinationCheck:
-        system_instruction = "You are a safeguard. Does the AI Response invent prices, hotels, or facts not present in the Context? Return JSON."
-        prompt = f"Context:\n{context}\n\nAI Response:\n{ai_response}"
-        
-        result = await self.router.generate_structured(
-            task_category=TaskCategory.CLASSIFICATION, # Fast model
-            prompt=prompt,
-            schema=HallucinationCheck,
-            system_instruction=system_instruction
-        )
-        return result
 
     def _determine_actions(self, decision: AIActionDecision):
         ui_actions = [UIAction(widget_name=w) for w in decision.ui_widgets]
