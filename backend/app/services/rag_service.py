@@ -18,12 +18,7 @@ class ChunkRepository(BaseRepository[KnowledgeChunk]):
         # Uses pgvector cosine distance operator <=>
         return db.query(self.model).order_by(self.model.embedding.cosine_distance(query_embedding)).limit(limit).all()
 
-# 2. Services
-class EmbeddingService:
-    def get_embedding(self, text: str) -> list[float]:
-        # Connects to Gemini embedding model (e.g. text-embedding-004)
-        # Mocking for architectural scaffolding
-        return [0.0] * 768
+from app.ai.providers.embeddings.base import EmbeddingProvider
 
 class RetrievalService:
     def __init__(self):
@@ -34,19 +29,19 @@ class RetrievalService:
         return self.chunk_repo.similarity_search(db, query_embedding, limit=limit)
 
 class RAGService:
-    def __init__(self):
-        self.embedding_service = EmbeddingService()
+    def __init__(self, embedding_provider: EmbeddingProvider):
+        self.embedding_provider = embedding_provider
         self.retrieval_service = RetrievalService()
         
-    def query(self, db: Session, query_text: str, limit: int = 5) -> list[KnowledgeChunk]:
+    async def query(self, db: Session, query_text: str, limit: int = 5) -> list[KnowledgeChunk]:
         """
         Top-level orchestrator for the RAG pipeline.
         Converts query to embedding -> Retrieves chunks from DB.
         """
-        query_embedding = self.embedding_service.get_embedding(query_text)
+        query_embedding = await self.embedding_provider.get_embedding(query_text)
         return self.retrieval_service.retrieve(db, query_embedding, limit=limit)
 
-# Global singleton instances
+# Global singleton instances for repos
 document_repo = DocumentRepository()
 chunk_repo = ChunkRepository()
-rag_service = RAGService()
+# rag_service must now be instantiated with a concrete EmbeddingProvider (e.g. GeminiEmbeddingProvider) in the router/orchestrator
