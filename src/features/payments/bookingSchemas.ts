@@ -17,11 +17,7 @@ export const bookingFormSchema = z.object({
   travelers: z.array(travelerSchema).min(1, "At least one traveler required"),
   
   // Step 5: Payment
-  paymentMethod: z.enum(["card", "apple_pay", "crypto", "split"]),
-  cardName: z.string().min(2, "Name on card is required"),
-  cardNumber: z.string().min(15, "Card number is required"),
-  cardExpiry: z.string().regex(/^\d{2}\/\d{2}$/, "Format MM/YY"),
-  cardCVC: z.string().min(3, "CVC required").max(4),
+  paymentProvider: z.enum(["stripe", "razorpay"]),
 });
 
 export type BookingFormValues = z.infer<typeof bookingFormSchema>;
