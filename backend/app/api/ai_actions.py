@@ -225,3 +225,37 @@ async def plan_trip(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.deal_scope import ComparisonRequest
+from app.services.deal_scope import DealScopeService
+
+_deal_scope_service = DealScopeService(router=_model_router)
+
+def get_deal_scope_service() -> DealScopeService:
+    return _deal_scope_service
+
+@router.post("/compare", response_model=AIResponse)
+async def compare(
+    request: ComparisonRequest,
+    service: DealScopeService = Depends(get_deal_scope_service)
+) -> AIResponse:
+    """
+    DealScope endpoint.
+    Determines winners using Python math, then uses Gemini to explain the qualitative tradeoffs.
+    """
+    try:
+        result = await service.compare(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="DealScope",
+            message="Here is a comparison of your options.",
+            data=result.model_dump(),
+            actions=[],
+            sources=[],
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
