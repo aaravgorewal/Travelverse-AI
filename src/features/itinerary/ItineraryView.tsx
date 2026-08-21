@@ -42,9 +42,9 @@ export const ItineraryView: React.FC = () => {
   const handleOptimizeItinerary = async () => {
     setIsOptimizing(true);
     try {
-      const res = await aiAPI.optimizeItinerary({ trip_id: activeTrip!.id });
+      const res = await aiAPI.optimizeItinerary({ itinerary_id: activeTrip!.id });
       if (res.data?.optimizedDays || [] && res.data?.optimizedDays.length > 0) {
-        updateTrip({ ...activeTrip!, days: res.optimizedDays });
+        updateTrip({ ...activeTrip!, days: res.data.optimizedDays });
         showToast({
           title: "Itinerary Optimized",
           message: `Saved ${res.data?.timeSavedMinutes || 0} min transit time and ${res.data?.carbonSavedKg || 0}kg CO₂2.`,

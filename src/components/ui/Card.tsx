@@ -19,10 +19,10 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const paddingStyles = {
     none: "p-0",
-    sm: "p-4",
-    md: "p-6",
-    lg: "p-8",
-    xl: "p-10",
+    sm: "p-5 sm:p-6",
+    md: "p-6 sm:p-8",
+    lg: "p-8 sm:p-10",
+    xl: "p-10 sm:p-12",
   };
 
   const variantStyles = {
@@ -69,13 +69,13 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ cla
 );
 
 export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className, children, ...props }) => (
-  <h3 className={cn("font-bold text-slate-900 dark:text-white text-lg tracking-tight", className)} {...props}>
+  <h3 className={cn("font-bold text-slate-900 dark:text-white text-xl sm:text-2xl tracking-tight", className)} {...props}>
     {children}
   </h3>
 );
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, children, ...props }) => (
-  <p className={cn("text-xs text-slate-500 dark:text-slate-400 leading-relaxed", className)} {...props}>
+  <p className={cn("text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed", className)} {...props}>
     {children}
   </p>
 );

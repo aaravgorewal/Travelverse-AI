@@ -25,10 +25,10 @@ export const AgentNavbar: React.FC = () => {
   const { currency } = useTravelStore();
 
   return (
-    <div className="w-full bg-slate-950 text-white border-b border-amber-900/40 sticky top-0 z-40 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="w-full bg-slate-950 text-white border-b border-amber-900/40 sticky top-0 z-40 backdrop-blur-md select-none">
+      <div className="w-full h-full px-3 sm:px-5 lg:px-6 xl:px-8">
         {/* Main Bar Container */}
-        <div className="flex h-16 items-center justify-between gap-3">
+        <div className="flex h-16 items-center justify-between gap-2 sm:gap-4 min-w-0">
           {/* Brand Logo & Mode Badge */}
           <div className="flex items-center gap-3 shrink-0">
             <button

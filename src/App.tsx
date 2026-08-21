@@ -172,7 +172,7 @@ export function App() {
         {!isB2BPortalActive && <Navbar />}
 
         {/* Main Feature Viewport (Optimized for 1440px Desktop, 768px Tablet, 360px Mobile) */}
-        <main className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 ${isB2BPortalActive ? 'pb-4' : 'pb-24 md:pb-12'} overflow-x-hidden min-w-0`}>
+        <main className={`flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 lg:pt-10 ${isB2BPortalActive ? 'pb-6' : 'pb-24 md:pb-16'} overflow-x-hidden min-w-0`}>
           <ErrorBoundary>
             <React.Suspense fallback={<PageSkeleton />}>
               {renderModule()}

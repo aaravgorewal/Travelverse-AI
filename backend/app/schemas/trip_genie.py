@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from app.schemas.smart_budget import BudgetOptimizationResult
 
 class TripPlanningRequest(BaseModel):
     destination: str
@@ -31,6 +32,6 @@ class TripPlanResult(BaseModel):
     trip_summary: str
     itinerary: List[TripDay]
     transport_suggestions: List[str]
-    budget_breakdown: Dict[str, Any] = Field(..., description="Python-calculated math summary")
+    budget_breakdown: BudgetOptimizationResult = Field(..., description="Python-calculated math summary")
     recommendations: List[str]
     warnings: List[str]

@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
@@ -3102,9 +3103,16 @@ app.post("/api/v1/auth/delete-account", (req, res) => {
 
 // Vite middleware for development & static serving for production
 async function startServer() {
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: {
+          server: httpServer,
+        },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -3116,7 +3124,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`TRAVELVERSE AI Server active on http://0.0.0.0:${PORT}`);
   });
 }

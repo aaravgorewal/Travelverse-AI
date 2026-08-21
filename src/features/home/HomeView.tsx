@@ -473,11 +473,11 @@ export const HomeView: React.FC = () => {
   };
 
   return (
-    <div id="travelverse-home" className="space-y-16 pb-24">
+    <div id="travelverse-home" className="space-y-20 pb-28">
       {/* 1. HERO SECTION */}
       <section
         id="hero-section"
-        className="relative min-h-[580px] rounded-3xl overflow-hidden flex items-center justify-center p-6 sm:p-10 lg:p-12 text-white border border-slate-800/80 shadow-2xl"
+        className="relative min-h-[640px] lg:min-h-[720px] rounded-3xl overflow-hidden flex items-center justify-center p-6 sm:p-12 lg:p-16 text-white border border-slate-800/80 shadow-2xl"
       >
         {/* Ambient Photographic Background */}
         <div
@@ -491,22 +491,22 @@ export const HomeView: React.FC = () => {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
+        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
           {/* Subtle Live Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 backdrop-blur-md px-4 py-1.5 border border-blue-400/20 text-xs font-semibold text-blue-200">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 backdrop-blur-md px-5 py-2 border border-blue-400/20 text-xs sm:text-sm font-semibold text-blue-200 shadow-sm">
+            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
             <span>Autonomous Universe • AI Itineraries • Real-Time Inventory • 360° VR</span>
           </div>
 
           {/* Exact Hero Title */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08]">
             Your Journey. <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-teal-300 bg-clip-text text-transparent">Intelligently Connected.</span>
           </h1>
 
           {/* AI Travel Input Box */}
-          <div className="max-w-2xl mx-auto space-y-2">
-            <div className="relative flex items-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-1.5 shadow-2xl focus-within:border-blue-400 transition-all">
-              <Sparkles className="w-5 h-5 ml-3 text-amber-300 shrink-0" />
+          <div className="max-w-3xl mx-auto space-y-3">
+            <div className="relative flex items-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-2 shadow-2xl focus-within:border-blue-400 transition-all">
+              <Sparkles className="w-6 h-6 ml-3 text-amber-300 shrink-0" />
               <input
                 id="ai-travel-input"
                 type="text"
@@ -516,20 +516,20 @@ export const HomeView: React.FC = () => {
                   if (e.key === "Enter") handlePlanWithAI();
                 }}
                 placeholder="Tell TRAVELVERSE where you want to go..."
-                className="w-full bg-transparent px-3 py-2.5 text-sm sm:text-base text-white placeholder-slate-300 focus:outline-none font-medium"
+                className="w-full bg-transparent px-4 py-3 text-base sm:text-lg text-white placeholder-slate-300 focus:outline-none font-medium"
               />
               <Button
                 id="btn-plan-with-ai-hero"
-                size="sm"
+                size="md"
                 onClick={() => handlePlanWithAI()}
-                className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md text-xs sm:text-sm font-bold px-4"
+                className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md text-sm sm:text-base font-bold px-6 py-3"
               >
-                <Sparkles className="w-4 h-4 mr-1.5" /> Plan with AI
+                <Sparkles className="w-4 h-4 mr-2" /> Plan with AI
               </Button>
             </div>
 
             {/* Example Prompt Pill */}
-            <div className="flex items-center justify-center gap-1.5 text-xs text-slate-300">
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-300">
               <span className="text-slate-400 font-medium">Example:</span>
               <button
                 type="button"
@@ -544,14 +544,14 @@ export const HomeView: React.FC = () => {
           </div>
 
           {/* Dedicated Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Button
               id="btn-plan-with-ai-main"
               size="lg"
               onClick={() => handlePlanWithAI()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/30 px-6 py-3"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/30 px-8 py-4 text-base sm:text-lg"
             >
-              <Sparkles className="w-4 h-4 mr-2 text-amber-300" /> Plan with AI
+              <Sparkles className="w-5 h-5 mr-2 text-amber-300" /> Plan with AI
             </Button>
             <Button
               id="btn-explore-vr-main"
@@ -560,29 +560,29 @@ export const HomeView: React.FC = () => {
               onClick={() => {
                 openVR(SEED_VR_SCENES[0]);
               }}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md rounded-2xl px-6 py-3"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md rounded-2xl px-8 py-4 text-base sm:text-lg font-semibold"
             >
-              <Glasses className="w-4 h-4 mr-2 text-teal-300" /> Explore VR
+              <Glasses className="w-5 h-5 mr-2 text-teal-300" /> Explore VR
             </Button>
           </div>
 
           {/* Unified Search Engine Tabs */}
-          <div className="mt-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 p-3 sm:p-4 text-slate-900 dark:text-white shadow-2xl backdrop-blur-xl border border-white/20 max-w-3xl mx-auto text-left">
+          <div className="mt-10 rounded-3xl bg-white/95 dark:bg-slate-900/95 p-4 sm:p-6 lg:p-8 text-slate-900 dark:text-white shadow-2xl backdrop-blur-xl border border-white/20 max-w-5xl mx-auto text-left">
             {/* Search Tabs: Flights, Hotels, Packages, Experiences */}
-            <div className="flex items-center gap-1 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
               {[
-                { id: "flights", label: "Flights", icon: <Plane className="w-3.5 h-3.5" /> },
-                { id: "hotels", label: "Hotels", icon: <Building className="w-3.5 h-3.5" /> },
-                { id: "packages", label: "Packages", icon: <MapPin className="w-3.5 h-3.5" /> },
-                { id: "experiences", label: "Experiences", icon: <Compass className="w-3.5 h-3.5" /> },
+                { id: "flights", label: "Flights", icon: <Plane className="w-4 h-4" /> },
+                { id: "hotels", label: "Hotels", icon: <Building className="w-4 h-4" /> },
+                { id: "packages", label: "Packages", icon: <MapPin className="w-4 h-4" /> },
+                { id: "experiences", label: "Experiences", icon: <Compass className="w-4 h-4" /> },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   id={`tab-${tab.id}`}
                   onClick={() => setSearchTab(tab.id as any)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                     searchTab === tab.id
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -593,56 +593,56 @@ export const HomeView: React.FC = () => {
             </div>
 
             {/* Form Inputs Grid */}
-            <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-center">
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                  <Navigation className="w-2.5 h-2.5 text-blue-500" /> Origin
+            <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Navigation className="w-3 h-3 text-blue-500" /> Origin
                 </label>
                 <input
                   type="text"
                   value={originInput}
                   onChange={(e) => setOriginInput(e.target.value)}
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
                   placeholder="City / Airport"
                 />
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                  <MapPin className="w-2.5 h-2.5 text-indigo-500" /> Destination
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3 text-indigo-500" /> Destination
                 </label>
                 <input
                   type="text"
                   value={destinationInput}
                   onChange={(e) => setDestinationInput(e.target.value)}
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
                   placeholder="Where to?"
                 />
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                  <Calendar className="w-2.5 h-2.5 text-teal-500" /> Dates
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3 text-teal-500" /> Dates
                 </label>
                 <input
                   type="text"
                   value={datesInput}
                   onChange={(e) => setDatesInput(e.target.value)}
-                  className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
                   placeholder="Select dates"
                 />
               </div>
 
-              <div className="flex gap-2">
-                <div className="flex-1 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                    <Users className="w-2.5 h-2.5 text-amber-500" /> Travelers
+              <div className="flex gap-2.5">
+                <div className="flex-1 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Users className="w-3 h-3 text-amber-500" /> Travelers
                   </label>
                   <input
                     type="text"
                     value={travelersInput}
                     onChange={(e) => setTravelersInput(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                    className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
                   />
                 </div>
 
@@ -650,9 +650,9 @@ export const HomeView: React.FC = () => {
                   id="btn-execute-search"
                   type="submit"
                   size="lg"
-                  className="h-full px-4.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
+                  className="h-full px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-5 h-5" />
                 </Button>
               </div>
             </form>
@@ -661,37 +661,37 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 2. UPCOMING TRIP SECTION */}
-      <section id="section-upcoming-trip" className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <section id="section-upcoming-trip" className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="success">Confirmed & Ticketed</Badge>
-              <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-500" /> Departure in {upcomingTrip.daysUntil} Days
+            <div className="flex items-center gap-2.5">
+              <Badge variant="success" size="md">Confirmed & Ticketed</Badge>
+              <span className="text-xs sm:text-sm font-semibold text-slate-400 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-blue-500" /> Departure in {upcomingTrip.daysUntil} Days
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Upcoming Trip
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               id="btn-view-itinerary"
               variant="outline"
-              size="sm"
+              size="md"
               onClick={() => setModule("trips")}
-              className="text-xs"
+              className="text-sm font-semibold"
             >
-              <Navigation className="w-3.5 h-3.5 mr-1.5" /> Full Itinerary
+              <Navigation className="w-4 h-4 mr-2" /> Full Itinerary
             </Button>
             <Button
               id="btn-view-boarding-pass"
-              size="sm"
+              size="md"
               onClick={() => setModule("documents")}
-              className="text-xs bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+              className="text-sm font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900"
             >
-              <Ticket className="w-3.5 h-3.5 mr-1.5" /> Live Boarding Pass
+              <Ticket className="w-4 h-4 mr-2" /> Live Boarding Pass
             </Button>
           </div>
         </div>
@@ -699,29 +699,29 @@ export const HomeView: React.FC = () => {
         {isLoading ? (
           <SkeletonTripCard />
         ) : (
-          <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-6 sm:p-8 border border-indigo-900/40 shadow-xl overflow-hidden relative">
+          <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-8 sm:p-10 lg:p-12 border border-indigo-900/40 shadow-2xl overflow-hidden relative">
             <div
               className="absolute right-0 top-0 bottom-0 w-1/3 opacity-20 bg-cover bg-center hidden md:block"
               style={{ backgroundImage: `url('${upcomingTrip.coverImage}')` }}
             />
-            <div className="relative z-10 space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+            <div className="relative z-10 space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
                 <div>
-                  <span className="text-xs font-bold text-indigo-300 uppercase tracking-widest">
+                  <span className="text-xs sm:text-sm font-bold text-indigo-300 uppercase tracking-widest">
                     PNR: {upcomingTrip.pnrCode} • 2 Travelers
                   </span>
-                  <h3 className="text-2xl font-black tracking-tight text-white mt-0.5">{upcomingTrip.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-2 mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-teal-400" /> {upcomingTrip.destination}
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mt-1">{upcomingTrip.title}</h3>
+                  <p className="text-sm sm:text-base text-slate-300 flex items-center gap-3 mt-2">
+                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-teal-400" /> {upcomingTrip.destination}</span>
                     <span>•</span>
-                    <Calendar className="w-3.5 h-3.5 text-blue-400" /> {upcomingTrip.startDate} to {upcomingTrip.endDate}
+                    <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-400" /> {upcomingTrip.startDate} to {upcomingTrip.endDate}</span>
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-right">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Destination Forecast</span>
-                    <span className="text-sm font-bold text-amber-300 flex items-center gap-1 justify-end">
+                  <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-right">
+                    <span className="text-xs text-slate-400 uppercase font-bold block mb-1">Destination Forecast</span>
+                    <span className="text-base sm:text-lg font-bold text-amber-300 flex items-center gap-1.5 justify-end">
                       {upcomingTrip.weatherForecast.icon} {upcomingTrip.weatherForecast.temp}°C • {upcomingTrip.weatherForecast.condition}
                     </span>
                   </div>
@@ -729,29 +729,29 @@ export const HomeView: React.FC = () => {
               </div>
 
               {/* Flight & Accommodation Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-blue-300 font-bold">
-                    <Plane className="w-4 h-4" /> Flight Outbound
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm text-blue-300 font-bold">
+                    <Plane className="w-4.5 h-4.5" /> Flight Outbound
                   </div>
-                  <p className="text-sm font-extrabold text-white">{upcomingTrip.flightNumber}</p>
-                  <p className="text-xs text-slate-400">{upcomingTrip.departureGate} • Boarding: {upcomingTrip.boardingTime}</p>
+                  <p className="text-base sm:text-lg font-extrabold text-white">{upcomingTrip.flightNumber}</p>
+                  <p className="text-xs sm:text-sm text-slate-400">{upcomingTrip.departureGate} • Boarding: {upcomingTrip.boardingTime}</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-indigo-300 font-bold">
-                    <BedDouble className="w-4 h-4" /> Accommodation
+                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm text-indigo-300 font-bold">
+                    <BedDouble className="w-4.5 h-4.5" /> Accommodation
                   </div>
-                  <p className="text-sm font-extrabold text-white">{upcomingTrip.hotelName}</p>
-                  <p className="text-xs text-slate-400">7 Nights • Gran Class Ryokan & 5-Star Suite</p>
+                  <p className="text-base sm:text-lg font-extrabold text-white">{upcomingTrip.hotelName}</p>
+                  <p className="text-xs sm:text-sm text-slate-400">7 Nights • Gran Class Ryokan & 5-Star Suite</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-emerald-300 font-bold">
-                    <ShieldCheck className="w-4 h-4" /> Autonomous Protection
+                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm text-emerald-300 font-bold">
+                    <ShieldCheck className="w-4.5 h-4.5" /> Autonomous Protection
                   </div>
-                  <p className="text-sm font-extrabold text-white">Delay Shield & SOS Active</p>
-                  <p className="text-xs text-slate-400">{upcomingTrip.carbonOffsetKg}kg CO₂ Offset 100% Certified</p>
+                  <p className="text-base sm:text-lg font-extrabold text-white">Delay Shield & SOS Active</p>
+                  <p className="text-xs sm:text-sm text-slate-400">{upcomingTrip.carbonOffsetKg}kg CO₂ Offset 100% Certified</p>
                 </div>
               </div>
             </div>
@@ -760,73 +760,73 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 3. AI RECOMMENDATIONS SECTION */}
-      <section id="section-ai-recommendations" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <section id="section-ai-recommendations" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="purple">
-                <Sparkles className="w-3 h-3 mr-1 text-purple-300" /> TravelDNA™ Tailored
+            <div className="flex items-center gap-2.5">
+              <Badge variant="purple" size="md">
+                <Sparkles className="w-4 h-4 mr-1 text-purple-300" /> TravelDNA™ Tailored
               </Badge>
-              <span className="text-xs font-semibold text-slate-400">
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">
                 Calibrated to your {userStyles.join(" & ")} preferences
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               AI Recommendations
             </h2>
           </div>
 
-          <Button variant="outline" size="sm" onClick={() => setModule("ai")}>
-            AI Itinerary Studio <ChevronRight className="w-4 h-4" />
+          <Button variant="outline" size="md" onClick={() => setModule("ai")} className="text-sm font-semibold">
+            AI Itinerary Studio <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <SkeletonExperienceCard />
             <SkeletonExperienceCard />
             <SkeletonExperienceCard />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {aiRecommendations.map((rec: any) => (
-              <Card key={rec.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group">
+              <Card key={rec.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
                 <div>
-                  <div className="relative h-52 w-full overflow-hidden">
+                  <div className="relative h-60 sm:h-64 w-full overflow-hidden">
                     <img
                       src={rec.imageUrl}
                       alt={rec.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-3 right-3">
-                      <span className="rounded-full bg-black/60 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
+                    <div className="absolute top-4 right-4">
+                      <span className="rounded-full bg-black/60 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
                         ⭐ {rec.rating}
                       </span>
                     </div>
-                    <div className="absolute top-3 left-3">
-                      <Badge variant="purple" className="shadow-lg">
+                    <div className="absolute top-4 left-4">
+                      <Badge variant="purple" size="md" className="shadow-lg">
                         {rec.badge}
                       </Badge>
                     </div>
-                    <div className="absolute bottom-3 left-3">
-                      <span className="rounded-xl bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
+                    <div className="absolute bottom-4 left-4">
+                      <span className="rounded-xl bg-slate-900/85 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
                         {rec.duration} • {rec.destination}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-5 space-y-3">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1">{rec.title}</h3>
-                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 text-xs text-purple-900 dark:text-purple-200 leading-relaxed flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                  <div className="p-6 space-y-4">
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white line-clamp-1">{rec.title}</h3>
+                    <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 text-xs sm:text-sm text-purple-900 dark:text-purple-200 leading-relaxed flex items-start gap-2.5">
+                      <Sparkles className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                       <span>{rec.aiRationale}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                    <div className="flex flex-wrap gap-2 pt-1">
                       {rec.tags?.map((t: string) => (
                         <span
                           key={t}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300"
                         >
                           ✦ {t}
                         </span>
@@ -835,18 +835,19 @@ export const HomeView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">Est. Total</span>
-                    <p className="text-base font-black text-slate-900 dark:text-white">{rec.estimatedCost}</p>
+                    <span className="text-xs text-slate-400 uppercase font-bold">Est. Total</span>
+                    <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">{rec.estimatedCost}</p>
                   </div>
 
                   <Button
-                    size="sm"
+                    size="md"
                     onClick={() => {
                       setAiPromptInput(`Plan a trip for: ${rec.title}`);
                       setModule("ai");
                     }}
+                    className="font-bold text-sm"
                   >
                     Generate Trip →
                   </Button>
@@ -858,28 +859,28 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 4. POPULAR DESTINATIONS SECTION */}
-      <section id="section-popular-destinations" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <section id="section-popular-destinations" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="info">Global Network</Badge>
-              <span className="text-xs font-semibold text-slate-400">Curated & Safety Verified</span>
+            <div className="flex items-center gap-2.5">
+              <Badge variant="info" size="md">Global Network</Badge>
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">Curated & Safety Verified</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Popular Destinations
             </h2>
           </div>
 
           {/* Destination Category Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             {["All", "Asia", "Middle East", "Europe", "Tropical"].map((filter) => (
               <button
                 key={filter}
                 id={`filter-dest-${filter.toLowerCase()}`}
                 onClick={() => setDestinationFilter(filter)}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   destinationFilter === filter
-                    ? "bg-blue-600 text-white shadow-sm"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                 }`}
               >
@@ -890,52 +891,52 @@ export const HomeView: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             <SkeletonDestinationCard />
             <SkeletonDestinationCard />
             <SkeletonDestinationCard />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {filteredDestinations.map((dest: any) => (
-              <Card key={dest.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group">
+              <Card key={dest.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
                 <div>
-                  <div className="relative h-48 w-full overflow-hidden">
+                  <div className="relative h-56 sm:h-60 w-full overflow-hidden">
                     <img
                       src={dest.imageUrl}
                       alt={dest.name}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-3 right-3 flex items-center gap-1">
-                      <Badge variant="default" className="bg-black/60 text-white backdrop-blur-md border-0 text-[10px]">
+                    <div className="absolute top-4 right-4 flex items-center gap-1">
+                      <Badge variant="default" size="sm" className="bg-black/60 text-white backdrop-blur-md border-0 text-xs">
                         ⭐ {dest.rating}
                       </Badge>
                     </div>
                     {dest.vrAvailable && (
-                      <div className="absolute top-3 left-3">
-                        <span className="rounded-full bg-teal-500/90 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-md flex items-center gap-1">
-                          <Glasses className="w-3 h-3" /> 360° VR Ready
+                      <div className="absolute top-4 left-4">
+                        <span className="rounded-full bg-teal-500/90 text-white text-xs font-bold px-3 py-1 backdrop-blur-md flex items-center gap-1.5 shadow-md">
+                          <Glasses className="w-3.5 h-3.5" /> 360° VR Ready
                         </span>
                       </div>
                     )}
-                    <div className="absolute bottom-3 left-3">
-                      <span className="rounded-lg bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
+                    <div className="absolute bottom-4 left-4">
+                      <span className="rounded-xl bg-slate-900/85 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
                         {dest.weather} • {dest.temperature}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2">
+                  <div className="p-6 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{dest.name}</h3>
-                      <span className="text-xs font-semibold text-slate-400">{dest.country}</span>
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{dest.name}</h3>
+                      <span className="text-xs sm:text-sm font-semibold text-slate-400">{dest.country}</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{dest.tagline}</p>
-                    <div className="flex flex-wrap gap-1 pt-1">
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{dest.tagline}</p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
                       {dest.tags?.map((tag: string) => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-400"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400"
                         >
                           {tag}
                         </span>
@@ -944,32 +945,33 @@ export const HomeView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-6 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">Flights from</span>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Flights from</span>
+                    <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                       {formatCurrency(dest.startingPrice, currency)}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {dest.vrAvailable && (
                       <Button
-                        size="sm"
+                        size="md"
                         variant="outline"
                         onClick={() => openVR(SEED_VR_SCENES[0])}
-                        className="text-xs px-2"
+                        className="px-3"
                         title="Preview in 360° VR"
                       >
-                        <Glasses className="w-3.5 h-3.5" />
+                        <Glasses className="w-4 h-4" />
                       </Button>
                     )}
                     <Button
-                      size="sm"
+                      size="md"
                       onClick={() => {
                         setDestinationInput(`${dest.name}, ${dest.country}`);
                         setModule("search");
                       }}
+                      className="font-bold text-sm"
                     >
                       Explore
                     </Button>
@@ -982,16 +984,16 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 5. EXPLORE IN VR SECTION */}
-      <section id="section-explore-in-vr" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <section id="section-explore-in-vr" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Badge variant="purple" size="md">
-                <Glasses className="w-3.5 h-3.5 text-indigo-400" /> Spatial Reality Engine
+                <Glasses className="w-4 h-4 text-indigo-400" /> Spatial Reality Engine
               </Badge>
-              <span className="text-xs font-semibold text-slate-400">Interactive 360° WebGL Previews</span>
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">Interactive 360° WebGL Previews</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Explore in VR
             </h2>
           </div>
@@ -999,26 +1001,27 @@ export const HomeView: React.FC = () => {
           <Button
             id="btn-browse-all-vr"
             variant="outline"
-            size="sm"
+            size="md"
             onClick={() => setModule("vr")}
+            className="text-sm font-semibold"
           >
-            All VR Portals <ChevronRight className="w-4 h-4" />
+            All VR Portals <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton className="h-64 rounded-3xl" />
-            <Skeleton className="h-64 rounded-3xl" />
-            <Skeleton className="h-64 rounded-3xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Skeleton className="h-72 rounded-3xl" />
+            <Skeleton className="h-72 rounded-3xl" />
+            <Skeleton className="h-72 rounded-3xl" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {vrPortals.map((vr: any, index: number) => (
               <div
                 key={vr.id}
                 onClick={() => openVR(SEED_VR_SCENES[index] || SEED_VR_SCENES[0])}
-                className="group relative h-72 rounded-3xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 cursor-pointer"
+                className="group relative h-80 sm:h-88 rounded-3xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 cursor-pointer"
               >
                 <img
                   src={vr.thumbnailUrl}
@@ -1027,19 +1030,19 @@ export const HomeView: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
-                <div className="absolute top-4 left-4">
-                  <span className="rounded-full bg-indigo-600/90 text-white text-[11px] font-bold px-3 py-1 backdrop-blur-md flex items-center gap-1 shadow-md">
-                    <Glasses className="w-3.5 h-3.5" /> {vr.badge}
+                <div className="absolute top-5 left-5">
+                  <span className="rounded-full bg-indigo-600/90 text-white text-xs font-bold px-3.5 py-1.5 backdrop-blur-md flex items-center gap-1.5 shadow-md">
+                    <Glasses className="w-4 h-4" /> {vr.badge}
                   </span>
                 </div>
 
-                <div className="absolute bottom-4 left-4 right-4 space-y-1.5">
-                  <span className="text-[11px] font-bold text-teal-300">{vr.location}</span>
-                  <h3 className="text-base font-bold text-white leading-snug">{vr.title}</h3>
-                  <div className="flex items-center justify-between pt-1 text-xs">
+                <div className="absolute bottom-5 left-5 right-5 space-y-2">
+                  <span className="text-xs sm:text-sm font-bold text-teal-300">{vr.location}</span>
+                  <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">{vr.title}</h3>
+                  <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
                     <span className="text-slate-300">{vr.hotspotsCount} Interactive Hotspots</span>
-                    <span className="text-indigo-400 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      Launch 360° <ArrowRight className="w-3.5 h-3.5" />
+                    <span className="text-indigo-400 font-bold flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
+                      Launch 360° <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
                 </div>
@@ -1050,14 +1053,14 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 6. TRENDING EXPERIENCES SECTION */}
-      <section id="section-trending-experiences" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <section id="section-trending-experiences" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="warning">Instant Confirmation</Badge>
-              <span className="text-xs font-semibold text-slate-400">Handpicked by Local Insiders</span>
+            <div className="flex items-center gap-2.5">
+              <Badge variant="warning" size="md">Instant Confirmation</Badge>
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">Handpicked by Local Insiders</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Trending Experiences
             </h2>
           </div>
@@ -1065,10 +1068,11 @@ export const HomeView: React.FC = () => {
           <Button
             id="btn-view-all-experiences"
             variant="outline"
-            size="sm"
+            size="md"
             onClick={() => setModule("experiences")}
+            className="text-sm font-semibold"
           >
-            View All Experiences <ChevronRight className="w-4 h-4" />
+            View All Experiences <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
 
@@ -1082,51 +1086,51 @@ export const HomeView: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {trendingExperiences.map((exp: any, i: number) => (
-              <Card key={exp.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group">
+              <Card key={exp.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
                 <div>
-                  <div className="relative h-44 w-full overflow-hidden">
+                  <div className="relative h-48 sm:h-52 w-full overflow-hidden">
                     <img
                       src={exp.imageUrl}
                       alt={exp.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-2.5 right-2.5">
-                      <span className="rounded-full bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-md">
+                    <div className="absolute top-3 right-3">
+                      <span className="rounded-full bg-black/60 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
                         ⭐ {exp.rating} ({exp.reviewsCount})
                       </span>
                     </div>
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="rounded-lg bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-md">
+                    <div className="absolute top-3 left-3">
+                      <span className="rounded-lg bg-amber-500/90 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
                         {exp.badge}
                       </span>
                     </div>
-                    <div className="absolute bottom-2.5 left-2.5">
-                      <span className="rounded-lg bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-md">
+                    <div className="absolute bottom-3 left-3">
+                      <span className="rounded-lg bg-slate-900/85 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
                         {exp.city}, {exp.country}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  <div className="p-5 space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                       {exp.category} • {exp.duration}
                     </span>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
                       {exp.title}
                     </h3>
                   </div>
                 </div>
 
-                <div className="p-4 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">From</span>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">From</span>
+                    <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                       {formatCurrency(exp.price, currency)}
                     </p>
                   </div>
 
                   <Button
-                    size="sm"
+                    size="md"
                     onClick={() => {
                       const seedExp = SEED_EXPERIENCES[i] || SEED_EXPERIENCES[0];
                       setSelectedExperience(seedExp);
@@ -1139,6 +1143,7 @@ export const HomeView: React.FC = () => {
                       });
                       setModule("experiences");
                     }}
+                    className="text-xs sm:text-sm font-bold"
                   >
                     Book Now
                   </Button>
@@ -1150,84 +1155,84 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 7. TRAVEL SAFETY SECTION */}
-      <section id="section-travel-safety" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <section id="section-travel-safety" className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="success">
-                <ShieldCheck className="w-3.5 h-3.5 mr-1" /> {travelSafety.globalStatus}
+            <div className="flex items-center gap-2.5">
+              <Badge variant="success" size="md">
+                <ShieldCheck className="w-4 h-4 mr-1" /> {travelSafety.globalStatus}
               </Badge>
-              <span className="text-xs font-semibold text-slate-400">
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">
                 Direct IATA, WHO & Embassy Health Intelligence
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Travel Safety & Global Assurance
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <a
               href={`tel:${travelSafety.emergencyPhone}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-sm font-bold hover:bg-emerald-500/20 transition-colors"
             >
-              <PhoneCall className="w-3.5 h-3.5" /> 24/7 SOS: {travelSafety.emergencyPhone}
+              <PhoneCall className="w-4 h-4" /> 24/7 SOS: {travelSafety.emergencyPhone}
             </a>
           </div>
         </div>
 
         {/* Safety Advisories & Shield Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Advisories List */}
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-4">
             {travelSafety.advisories?.map((adv: any) => (
               <div
                 key={adv.id}
-                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2"
+                className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shadow-sm"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{adv.country}</h4>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-3 w-3 rounded-full bg-emerald-500" />
+                    <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{adv.country}</h4>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                     {adv.level}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-start gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <FileText className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                     <span><strong>Entry:</strong> {adv.entryRequirements}</span>
                   </div>
-                  <div className="flex items-start gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-teal-500 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-teal-500 shrink-0 mt-0.5" />
                     <span><strong>Health:</strong> {adv.healthStatus}</span>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400 pt-1 flex items-center gap-1">
-                  <Info className="w-3 h-3 text-slate-400" /> {adv.lastVerified}
+                <p className="text-xs text-slate-400 pt-1 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-slate-400" /> {adv.lastVerified}
                 </p>
               </div>
             ))}
           </div>
 
           {/* Safety Pillar Card */}
-          <div className="p-6 rounded-3xl bg-gradient-to-b from-slate-900 to-indigo-950 text-white space-y-4 border border-indigo-900/40 shadow-xl flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <h4 className="text-base font-bold text-white">Autonomous Safety Shield</h4>
+          <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-slate-900 to-indigo-950 text-white space-y-6 border border-indigo-900/40 shadow-2xl flex flex-col justify-between">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                <h4 className="text-lg sm:text-xl font-bold text-white">Autonomous Safety Shield</h4>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {travelSafety.features?.map((f: any, i: number) => (
-                  <div key={i} className="space-y-0.5">
-                    <p className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {f.title}
+                  <div key={i} className="space-y-1">
+                    <p className="text-sm font-bold text-indigo-300 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {f.title}
                     </p>
-                    <p className="text-[11px] text-slate-300 pl-5">{f.desc}</p>
+                    <p className="text-xs sm:text-sm text-slate-300 pl-6 leading-relaxed">{f.desc}</p>
                   </div>
                 ))}
               </div>
@@ -1235,9 +1240,9 @@ export const HomeView: React.FC = () => {
 
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               onClick={() => setModule("documents")}
-              className="w-full text-white border-white/20 hover:bg-white/10 text-xs"
+              className="w-full text-white border-white/20 hover:bg-white/10 text-sm font-semibold"
             >
               Open Safety & Pass Vault
             </Button>
@@ -1246,36 +1251,36 @@ export const HomeView: React.FC = () => {
       </section>
 
       {/* 8. AGENT COPILOT SECTION */}
-      <section id="section-agent-copilot" className="space-y-6">
+      <section id="section-agent-copilot" className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Badge variant="purple" size="md">
-                <Bot className="w-3.5 h-3.5 text-purple-300" /> Autonomous Agentic Copilot
+                <Bot className="w-4 h-4 text-purple-300" /> Autonomous Agentic Copilot
               </Badge>
-              <span className="text-xs font-semibold text-slate-400">
-                Powered by Gemini 2.5 Real-Time Intelligence
+              <span className="text-xs sm:text-sm font-semibold text-slate-400">
+                Powered by Gemini 3.7 Real-Time Intelligence
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
               Agent Copilot
             </h2>
           </div>
         </div>
 
-        <div className="rounded-3xl bg-slate-900 text-white p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-300" /> Autonomous Flight, Hotel & Budget Calculator
+        <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-10 lg:p-12 border border-slate-800 shadow-2xl space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1.5">
+              <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                <Sparkles className="w-5 h-5 text-amber-300" /> Autonomous Flight, Hotel & Budget Calculator
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-400">
                 Ask Agent Copilot any travel query, rate comparison, or family budget optimization.
               </p>
             </div>
 
             {/* Quick Sample Queries */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
               {[
                 "Plan 5-day Dubai trip under ₹2 lakh",
                 "Find Tokyo autumn business flights",
@@ -1288,7 +1293,7 @@ export const HomeView: React.FC = () => {
                     setCopilotQuery(query);
                     handleCopilotSubmit(undefined, query);
                   }}
-                  className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 text-xs font-medium border border-white/10 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 text-xs sm:text-sm font-medium border border-white/10 transition-colors cursor-pointer"
                 >
                   ⚡ {query}
                 </button>
@@ -1297,7 +1302,7 @@ export const HomeView: React.FC = () => {
           </div>
 
           {/* Interactive Copilot Query Form */}
-          <form onSubmit={(e) => handleCopilotSubmit(e)} className="flex items-center gap-2">
+          <form onSubmit={(e) => handleCopilotSubmit(e)} className="flex items-center gap-3">
             <div className="relative flex-1">
               <input
                 id="input-copilot-query"
@@ -1305,20 +1310,20 @@ export const HomeView: React.FC = () => {
                 value={copilotQuery}
                 onChange={(e) => setCopilotQuery(e.target.value)}
                 placeholder="Ask Agent Copilot: e.g. 'Can I do a 4-day Amalfi Coast trip in October under $3,000?'"
-                className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all font-medium"
+                className="w-full rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-base sm:text-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all font-medium"
               />
             </div>
             <Button
               id="btn-submit-copilot"
               type="submit"
               disabled={copilotLoading}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl px-5 py-3 font-bold text-xs sm:text-sm shrink-0"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl px-6 py-4 font-bold text-sm sm:text-base shrink-0"
             >
               {copilotLoading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
+                <RefreshCw className="w-5 h-5 animate-spin" />
               ) : (
-                <span className="flex items-center gap-1.5">
-                  <Send className="w-4 h-4" /> Ask Copilot
+                <span className="flex items-center gap-2">
+                  <Send className="w-5 h-5" /> Ask Copilot
                 </span>
               )}
             </Button>
@@ -1326,29 +1331,29 @@ export const HomeView: React.FC = () => {
 
           {/* Copilot Response Card */}
           {copilotResponse && (
-            <div className="p-5 rounded-2xl bg-white/5 border border-indigo-500/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="p-6 rounded-2xl bg-white/5 border border-indigo-500/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-                    <Bot className="w-4 h-4" />
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                    <Bot className="w-5 h-5" />
                   </div>
-                  <h4 className="text-sm font-bold text-white">{copilotResponse.headline}</h4>
+                  <h4 className="text-base font-bold text-white">{copilotResponse.headline}</h4>
                 </div>
                 {copilotResponse.estimatedBudget && (
-                  <span className="text-xs font-extrabold text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-xs sm:text-sm font-extrabold text-emerald-400 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     Est: {copilotResponse.estimatedBudget}
                   </span>
                 )}
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
                 {copilotResponse.analysis}
               </p>
 
               {/* Suggested Followup Action Pills */}
               {copilotResponse.suggestedPrompts && (
-                <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-white/10">
-                  <span className="text-[11px] text-slate-400">Suggested Next Steps:</span>
+                <div className="pt-3 flex flex-wrap items-center gap-2.5 border-t border-white/10">
+                  <span className="text-xs text-slate-400">Suggested Next Steps:</span>
                   {copilotResponse.suggestedPrompts.map((p: string, i: number) => (
                     <button
                       key={i}
@@ -1356,7 +1361,7 @@ export const HomeView: React.FC = () => {
                         setAiPromptInput(p);
                         setModule("ai");
                       }}
-                      className="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs font-semibold border border-indigo-500/30 transition-colors cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs sm:text-sm font-semibold border border-indigo-500/30 transition-colors cursor-pointer"
                     >
                       → {p}
                     </button>

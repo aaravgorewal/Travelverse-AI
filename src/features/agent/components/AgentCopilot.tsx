@@ -3,7 +3,8 @@ import { Sparkles, Send, Loader2, ArrowRight, CheckCircle2, AlertTriangle, Exter
 import { useAuthStore } from "../../../stores/useAuthStore";
 import { useToast } from "../../../components/ui/Toast";
 import { Button, Input, Card } from "../../../components/ui";
-import { aiAPI } from "../../../lib/api/ai";
+import { aiAPI, CopilotChatRequest } from "../../../lib/api/ai";
+import { useAIAction } from "../../../hooks/useAIAction";
 
 interface AIResponse {
   request_id: string;
@@ -27,8 +28,9 @@ interface ChatMessage {
 export const AgentCopilot: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  
+  const { execute, status, error, reset } = useAIAction();
   
   const { token } = useAuthStore();
   const { showToast } = useToast();
@@ -40,11 +42,11 @@ export const AgentCopilot: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isGenerating]);
+  }, [messages, status]);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || isGenerating) return;
+    if (!input.trim() || status === "loading") return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -54,33 +56,32 @@ export const AgentCopilot: React.FC = () => {
     
     setMessages(prev => [...prev, userMsg]);
     setInput("");
-    setIsGenerating(true);
 
-    try {
-      const data = await aiAPI.copilotChat({
-        message: userMsg.content,
-        agent_id: "agent", // Real ID handled by backend via JWT
-        conversation_id: conversationId || undefined
-      });
-      
-      if (!conversationId) {
-        setConversationId(data.conversation_id);
+    const payload: CopilotChatRequest = {
+      message: userMsg.content,
+      agent_id: "agent",
+      conversation_id: conversationId || undefined
+    };
+
+    execute(aiAPI.copilotChat, [payload], {
+      onSuccess: (data, response) => {
+        if (!conversationId && response.conversation_id) {
+          setConversationId(response.conversation_id);
+        }
+        
+        const assistantMsg: ChatMessage = {
+          id: response.request_id,
+          role: "assistant",
+          content: response.message,
+          response: response
+        };
+        
+        setMessages(prev => [...prev, assistantMsg]);
+      },
+      onError: () => {
+        // Error state is handled by the UI automatically
       }
-
-      const assistantMsg: ChatMessage = {
-        id: data.request_id,
-        role: "assistant",
-        content: data.message,
-        response: data
-      };
-      
-      setMessages(prev => [...prev, assistantMsg]);
-      
-    } catch (err: any) {
-      showToast({ title: "Copilot Error", message: err.message, type: "error" });
-    } finally {
-      setIsGenerating(false);
-    }
+    });
   };
 
   return (
@@ -160,7 +161,7 @@ export const AgentCopilot: React.FC = () => {
           ))
         )}
         
-        {isGenerating && (
+        {status === 'loading' && (
           <div className="flex justify-start">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3">
               <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
@@ -180,7 +181,7 @@ export const AgentCopilot: React.FC = () => {
           placeholder="Ask Agent Copilot..." 
           className="flex-1 bg-white dark:bg-slate-900 text-sm py-5 px-4 rounded-xl shadow-sm border-slate-200 dark:border-slate-800"
         />
-        <Button type="submit" size="lg" className="bg-indigo-600 hover:bg-indigo-700 shrink-0 h-auto" disabled={isGenerating || !input.trim()}>
+        <Button type="submit" size="lg" className="bg-indigo-600 hover:bg-indigo-700 shrink-0 h-auto" disabled={status === 'loading' || !input.trim()}>
           <Send className="w-4 h-4" /> 
         </Button>
       </form>

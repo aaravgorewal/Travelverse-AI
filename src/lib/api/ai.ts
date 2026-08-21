@@ -1,5 +1,23 @@
 import { apiClient, getStoredToken } from "../../services/apiClient";
 
+
+export interface OptimizeItineraryRequest { itinerary_id: string; preferences?: any; constraints?: any; }
+export interface OptimizeBudgetRequest { trip_id: string; target_budget: number; currency?: string; }
+export interface CompareRequest { items: string[]; criteria?: string[]; }
+export interface ExplainRequest { topic: string; context_id?: string; }
+export interface RecommendRequest { preferences: any; location?: string; }
+export interface DestinationRequest { destination: string; interests?: string[]; }
+export interface PackingListRequest { destination: string; duration_days: number; weather?: string; }
+export interface TravelPulseRequest { location: string; categories?: string[]; }
+export interface SupportRequest { query: string; booking_id?: string; }
+export interface PersonalizeRequest { user_id: string; context?: any; }
+export interface CreatePackageRequest { destination: string; budget: number; travelers: number; preferences?: any; }
+export interface GenerateQuoteRequest { package_id: string; currency?: string; }
+export interface CustomerMessageRequest { customer_id: string; intent: string; context?: any; }
+export interface CopilotPackageRequest { destination: string; budget: number; travelers: number; preferences?: any; }
+export interface CopilotValidateRequest { package_id: string; }
+export interface CopilotQuoteRequest { package_id: string; margin?: number; }
+
 export type ConfidenceLevel = "high" | "medium" | "low";
 
 export interface AIResponse<T = any> {
@@ -33,6 +51,14 @@ export interface ActionConfirmationRequest {
   explicit_consent: boolean;
 }
 
+export interface AIChatRequest {
+  message: string;
+  conversation_id?: string;
+  agentPersona?: string;
+  language?: string;
+  conversationHistory?: any[];
+  context?: any;
+}
 export interface ChatRequest {
   message: string;
   context: TravelContext;
@@ -49,7 +75,7 @@ export interface CopilotChatRequest {
 
 export const aiAPI = {
   // Core Orchestrator
-  chat: async (payload: ChatRequest): Promise<AIResponse> => {
+  chat: async (payload: AIChatRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/chat", payload);
     return data;
   },
@@ -149,75 +175,75 @@ export const aiAPI = {
     return data;
   },
 
-  optimizeItinerary: async (payload: any): Promise<AIResponse> => {
+  optimizeItinerary: async (payload: OptimizeItineraryRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/optimize-itinerary", payload);
     return data;
   },
 
-  optimizeBudget: async (payload: any): Promise<AIResponse> => {
+  optimizeBudget: async (payload: OptimizeBudgetRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/optimize-budget", payload);
     return data;
   },
 
   // Discovery & Context
-  recommend: async (payload: any): Promise<AIResponse> => {
+  recommend: async (payload: RecommendRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/recommend", payload);
     return data;
   },
 
-  compare: async (payload: any): Promise<AIResponse> => {
+  compare: async (payload: CompareRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/compare", payload);
     return data;
   },
 
-  explain: async (payload: any): Promise<AIResponse> => {
+  explain: async (payload: ExplainRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/explain", payload);
     return data;
   },
 
-  destination: async (payload: any): Promise<AIResponse> => {
+  destination: async (payload: DestinationRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/destination", payload);
     return data;
   },
 
   // Utilities
-  packingList: async (payload: any): Promise<AIResponse> => {
+  packingList: async (payload: PackingListRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/packing-list", payload);
     return data;
   },
 
-  support: async (payload: any): Promise<AIResponse> => {
+  support: async (payload: SupportRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/support", payload);
     return data;
   },
 
-  travelPulse: async (payload: any): Promise<AIResponse> => {
+  travelPulse: async (payload: TravelPulseRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/travel-pulse", payload);
     return data;
   },
 
   // Agent Portal
-  personalize: async (payload: any): Promise<AIResponse> => {
+  personalize: async (payload: PersonalizeRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/personalize", payload);
     return data;
   },
 
-  createPackage: async (payload: any): Promise<AIResponse> => {
+  createPackage: async (payload: CreatePackageRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/create-package", payload);
     return data;
   },
 
-  validatePackage: async (payload: any): Promise<AIResponse> => {
+  validatePackage: async (payload: CopilotValidateRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/validate-package", payload);
     return data;
   },
 
-  generateQuote: async (payload: any): Promise<AIResponse> => {
+  generateQuote: async (payload: GenerateQuoteRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/generate-quote", payload);
     return data;
   },
 
-  customerMessage: async (payload: any): Promise<AIResponse> => {
+  customerMessage: async (payload: CustomerMessageRequest): Promise<AIResponse> => {
     const { data } = await apiClient.post<AIResponse>("/api/v1/ai/customer-message", payload);
     return data;
   },
@@ -233,57 +259,4 @@ export const aiAPI = {
     return data;
   }
 };
-
-// Backward compatibility types for the frontend components
-export interface GenerateTripPlanParams {
-  destination: string;
-  daysCount?: number;
-  dates?: any;
-  budget?: string | number;
-  travelers?: any;
-  interests?: any;
-  aiAction?: string;
-  baseTrip?: any;
-}
-
-export type TripContextData = any;
-export type ChatParams = any;
-export type RecommendParams = any;
-export type ExplainParams = any;
-export type OptimizeParams = any;
-export type ReduceCostParams = any;
-export type PersonalizeParams = any;
-export type PackingListParams = any;
-export type SupportParams = any;
-export type CompareParams = any;
-export type AIRequestOptions = any;
-
-export type ChatResponse = AIResponse;
-export type PlanTripResponse = AIResponse;
-export type RecommendResponse = AIResponse;
-export type ExplainResponse = AIResponse;
-export type OptimizeResponse = AIResponse;
-export type ReduceCostResponse = AIResponse;
-export type PersonalizeResponse = AIResponse;
-export type PackingListResponse = AIResponse;
-export type SupportResponse = AIResponse;
-export type CompareResponse = AIResponse;
-
-// Aliases for useTravelAI.ts compatibility
-(aiAPI as any).optimize = aiAPI.optimizeItinerary;
-(aiAPI as any).reduceCost = aiAPI.optimizeBudget;
-
-// Fallback types for TS errors
-export type TripContextData = any;
-export type ChatResponse = any;
-export type PlanTripResponse = any;
-export type RecommendResponse = any;
-export type ExplainResponse = any;
-export type OptimizeResponse = any;
-export type ReduceCostResponse = any;
-export type PersonalizeResponse = any;
-export type PackingListResponse = any;
-export type SupportResponse = any;
-export type CompareResponse = any;
-export type GenerateTripPlanParams = any;
 

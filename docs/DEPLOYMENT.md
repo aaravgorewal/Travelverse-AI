@@ -1,23 +1,22 @@
 # Deployment Guide
 
-## Environment Variables
-The following must be set in the production environment:
-- `JWT_SECRET`: Secure cryptographic key for signing agent tokens.
-- `DATABASE_URL`: Connection string to the `pgvector` enabled Postgres instance.
-- `FRONTEND_URL`: Used to strict-bind CORS in FastAPI (e.g. `https://app.travelverse.ai`).
-- `GEMINI_API_KEY`: Primary AI engine.
+TRAVELVERSE is designed for containerized deployment (e.g., Docker) or Platform-as-a-Service (e.g., Vercel + Render).
 
-## Start Commands
-**Backend**:
+## Pre-Flight Checklist
+Before deploying to production, perform the final audit checks:
+- Verify `MOCK_MODE=False`.
+- Verify `CORS_ORIGINS` is restricted strictly to the production frontend domain.
+- Run `alembic upgrade head` on the production Supabase PostgreSQL instance.
+
+## Backend Deployment (FastAPI)
+Deploy the FastAPI app behind a production-grade ASGI server like Uvicorn + Gunicorn:
 ```bash
-cd backend
-alembic upgrade head
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
 ```
 
-**Frontend**:
+## Frontend Deployment (React)
+Build the optimized static bundle:
 ```bash
 npm run build
-npm run preview
 ```
-*(In a real production environment, use a CDN for static assets or a proper Node/Next.js runner)*
+Host the `dist/` directory on a static CDN (Vercel, AWS S3, Cloudflare Pages). Ensure all routing falls back to `index.html` for client-side routing to function properly.

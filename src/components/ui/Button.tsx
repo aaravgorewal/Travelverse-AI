@@ -77,12 +77,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles = {
-      xs: "text-[11px] px-2.5 py-1 gap-1 h-7 font-semibold",
-      sm: "text-xs px-3 py-1.5 gap-1.5 h-8",
-      md: "text-sm px-4 py-2.5 gap-2 h-10",
-      lg: "text-base px-6 py-3 gap-2.5 h-12 font-semibold",
-      xl: "text-lg px-8 py-3.5 gap-3 h-14 font-bold tracking-tight",
-      icon: "h-10 w-10 p-0",
+      xs: "text-xs px-3 py-1.5 gap-1.5 h-8 font-semibold",
+      sm: "text-xs sm:text-sm px-3.5 py-2 gap-2 h-9 font-semibold",
+      md: "text-sm sm:text-base px-5 py-2.5 gap-2.5 h-11 font-semibold",
+      lg: "text-base sm:text-lg px-6 py-3.5 gap-3 h-13 font-bold",
+      xl: "text-lg sm:text-xl px-8 py-4 gap-3.5 h-15 font-bold tracking-tight",
+      icon: "h-11 w-11 p-0",
     };
 
     const isAIVariant = variant.startsWith("ai");

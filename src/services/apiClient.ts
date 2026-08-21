@@ -25,16 +25,37 @@ export const getStoredToken = (): string | null => {
     const raw = localStorage.getItem("travelverse_session");
     if (!raw) return null;
     const session = JSON.parse(raw);
-    if (session?.expiresAt && Date.now() > session.expiresAt) {
-      localStorage.removeItem("travelverse_session");
-      return null;
-    }
     return session?.token || null;
   } catch {
     return null;
   }
 };
 
+export const getRefreshToken = (): string | null => {
+  try {
+    const raw = localStorage.getItem("travelverse_session");
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return session?.refreshToken || null;
+  } catch {
+    return null;
+  }
+};
+
+// Request queue for refresh tokens
+let isRefreshing = false;
+let failedQueue: { resolve: (value?: unknown) => void; reject: (reason?: any) => void; }[] = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 // Request Interceptor: Attach bearer token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -56,19 +77,64 @@ apiClient.interceptors.request.use(
 // Response Interceptor: Catch 401 and handle expired session
 apiClient.interceptors.response.use(
   (response) => response.data,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Broadcast session expired event
-      window.dispatchEvent(new CustomEvent("travelverse:session-expired"));
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return axios(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) {
+        isRefreshing = false;
+        window.dispatchEvent(new CustomEvent("travelverse:session-expired"));
+        return Promise.reject(error);
+      }
+
+      try {
+        const { data } = await axios.post("/api/v1/auth/refresh", null, {
+          params: { refresh_token: refreshToken }
+        });
+        
+        const raw = localStorage.getItem("travelverse_session");
+        if (raw) {
+          const session = JSON.parse(raw);
+          session.token = data.access_token;
+          session.refreshToken = data.refresh_token;
+          localStorage.setItem("travelverse_session", JSON.stringify(session));
+        }
+        
+        originalRequest.headers['Authorization'] = 'Bearer ' + data.access_token;
+        processQueue(null, data.access_token);
+        return axios(originalRequest).then(r => r.data);
+      } catch (err) {
+        processQueue(err as Error, null);
+        window.dispatchEvent(new CustomEvent("travelverse:session-expired"));
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
     }
     
     // Check for offline/timeout errors
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout') || error.message.includes('Network Error')) {
       return Promise.reject(new Error("Request timed out. Please check your connection and try again."));
     }
 
     const message =
       (error.response?.data as any)?.error ||
+      (error.response?.data as any)?.detail ||
       error.message ||
       "An unexpected error occurred in TravelVerse API.";
     return Promise.reject(new Error(message));
@@ -76,4 +142,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

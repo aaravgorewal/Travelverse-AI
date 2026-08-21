@@ -74,16 +74,16 @@ export const LocalSenseView: React.FC = () => {
 
     try {
       if (action === "culture") {
-        const res = await aiAPI.explain({ topic: "Local Culture & Traditions", context: destination });
+        const res = await aiAPI.explain({ topic: "Local Culture & Traditions", context_id: destination });
         setAiResult(res.message + "\n\n**Key Takeaways:**\n" + res.data?.keyTakeaways || [].join("\n- "));
       } else if (action === "phrases") {
-        const res = await aiAPI.explain({ topic: "Essential Travel Phrases", context: destination });
+        const res = await aiAPI.explain({ topic: "Essential Travel Phrases", context_id: destination });
         setAiResult(res.message);
       } else if (action === "avoid") {
-        const res = await aiAPI.explain({ topic: "What to avoid doing", context: destination });
-        setAiResult(res.explanation + "\n\n**Cons to watch out for:**\n" + res.data?.cons || [].join("\n- "));
+        const res = await aiAPI.explain({ topic: "What to avoid doing", context_id: destination });
+        setAiResult(res.data.explanation + "\n\n**Cons to watch out for:**\n" + res.data?.cons || [].join("\n- "));
       } else if (action === "recommendations") {
-        const res = await aiAPI.recommend({ destination, category: "all" });
+        const res = await aiAPI.recommend({ destination, interests: ["all"] });
         const list = res.data?.recommendations || [].map(r => `**${r.title}**: ${r.aiRationale}`).join("\n\n");
         setAiResult(res.message + "\n\n" + list);
       } else if (action === "translate") {

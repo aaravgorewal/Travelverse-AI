@@ -11,6 +11,8 @@ from app.ai.grounding_guard import GroundingGuard
 from app.services.deal_scope import DealScopeService
 from app.providers.tbo.client import TBOProvider
 from app.providers.google_places import GooglePlacesProvider
+from app.schemas.smart_budget import BudgetOptimizationRequest, BudgetItem, PriceDetail
+from app.services.smart_budget_service import SmartBudgetService
 
 logger = logging.getLogger(__name__)
 
@@ -117,8 +119,39 @@ class CopilotService:
             raise RuntimeError("Failed to build package proposal.")
             
         # 6. Calculate Totals (STRICT BOUNDARY - Python)
-        subtotal = sum(item.cost for item in proposal.items)
-        markup = subtotal * 0.10 # 10% agent markup
+        flight_items = []
+        hotel_items = []
+        experience_items = []
+        
+        for item in proposal.items:
+            b_item = BudgetItem(
+                item_id=item.name,
+                name=item.name,
+                category="flights" if item.type.lower() == "flight" else "hotels" if item.type.lower() == "hotel" else "experiences",
+                price=PriceDetail(amount=item.cost, source="TBO" if item.type.lower() in ["flight", "hotel"] else "places")
+            )
+            if item.type.lower() == "flight":
+                flight_items.append(b_item)
+            elif item.type.lower() == "hotel":
+                hotel_items.append(b_item)
+            else:
+                experience_items.append(b_item)
+                
+        budget_req = BudgetOptimizationRequest(
+            flight_prices=flight_items,
+            hotel_prices=hotel_items,
+            transfer_prices=[],
+            experience_prices=experience_items,
+            budget=intent.budget,
+            currency="USD"
+        )
+        
+        budget_result = SmartBudgetService.calculate_budget(budget_req)
+        
+        # In a real app we might recalculate agent markup, but for now we just 
+        # add a flat 10% agent markup on the total
+        subtotal = budget_result.total
+        markup = subtotal * 0.10
         total = subtotal + markup
         
         final_package = CopilotPackage(
@@ -126,7 +159,7 @@ class CopilotService:
             subtotal=subtotal,
             markup=markup,
             total=total,
-            currency="USD" # Assume USD for MVP
+            currency="USD"
         )
         
         # 7. Validate Package (Python/Guard)

@@ -35,3 +35,7 @@ class KnowledgeChunk(Base):
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
     )
+
+# Legacy Aliases
+RAGDocument = KnowledgeDocument
+RAGDocumentChunk = KnowledgeChunk

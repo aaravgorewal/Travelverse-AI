@@ -1,34 +1,36 @@
-# TRAVELVERSE AI REST API
+# API Contracts
 
-The backend exposes a unified orchestration API for both standard travelers and agents, built using FastAPI.
+The FastAPI backend exposes all functionality through strict JSON schemas.
 
-## Global Concepts
-- **Authentication**: All endpoints verify identity via a `Bearer` token (JWT).
-- **Environment Context**: Endpoints consume a `TravelContext` object ensuring cross-lingual and contextual awareness.
-- **Fail-safe Modes**: The API returns explicit `422` (Validation Error) or graceful string fallback on provider timeouts. 
-- **Mock Mode**: Setting `VITE_MOCK_MODE=true` bypasses all live external providers.
+## Global Error Handling
+All errors (4xx, 5xx) strictly follow the global error schema:
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid payload",
+    "request_id": "uuid-v4",
+    "retryable": false
+  }
+}
+```
 
-## Endpoints
+## Global AI Response Schema (`AIResponse`)
+Every AI interaction endpoint (`/api/v1/ai/*` and `/api/v1/copilot/*`) returns the canonical `AIResponse` format:
+```json
+{
+  "request_id": "string",
+  "conversation_id": "string",
+  "feature": "TripGenie",
+  "message": "Markdown formatted AI response.",
+  "data": { ... },
+  "actions": [ ... ],
+  "sources": ["Dubai Tourism Guidelines"],
+  "warnings": ["Price hallucination detected and sanitized"],
+  "confidence": "high",
+  "mock": false
+}
+```
 
-### 1. `POST /api/v1/ai/orchestrate`
-The primary unified gateway for traveler AI tools.
-- **Payload**: `ChatRequest` (includes `message`, `context`, `tools_allowed`).
-- **Response**: `AIResponse` containing:
-  - `reply`: The textual reasoning.
-  - `data`: Typed structured JSON (e.g. `BudgetOptimizationResult`).
-
-### 2. `POST /api/v1/copilot/chat`
-Dedicated agent-only gateway. Validates JWT for `role: agent`.
-- **Payload**: `CopilotChatRequest`
-- **Response**: `AIResponse`
-
-### 3. `GET /api/v1/copilot/alerts`
-Proactive AI polling endpoint for agents.
-- **Query**: `agent_id`
-- **Response**: List of parsed `AlertIQ` JSON models.
-
-## Error Handling
-Standard HTTP codes are mapped to predictable JSON models containing `detail`.
-- `401/403`: Auth or Role failure.
-- `422`: Pydantic validation failure.
-- `503`: All LLM providers timed out.
+## MOCK_MODE Flag
+When `MOCK_MODE=True` in the backend environment, all endpoints simulate API calls (TBO, Google Maps, OpenWeather) using deterministic demo data, and `AIResponse.mock` is set to `True`.

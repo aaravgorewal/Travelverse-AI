@@ -39,8 +39,8 @@ class ModelRouter:
     def _get_model_for_task(self, task_category: str) -> str:
         model = self.routing_table.get(task_category)
         if not model:
-            logger.warning(f"Unknown task category '{task_category}'. Defaulting to {settings.GEMINI_MODEL_DEFAULT}.")
-            return settings.GEMINI_MODEL_DEFAULT
+            logger.warning(f"Unknown task category '{task_category}'. Defaulting to {settings.GEMINI_MODEL}.")
+            return settings.GEMINI_MODEL
         return model
 
     def _sanitize_prompt(self, prompt: str) -> str:

@@ -10,45 +10,45 @@ export const Footer: React.FC = () => {
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-300">
       {/* Top Value Propositions */}
       <div className="border-b border-slate-800 bg-slate-950/60 py-8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/30">
-                <Sparkles className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/30">
+                <Sparkles className="h-5.5 w-5.5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Gemini 3.7 Intelligence</p>
-                <p className="text-xs text-slate-400">Autonomous dynamic trip orchestration</p>
+                <p className="text-sm sm:text-base font-bold text-white">Gemini 3.7 Intelligence</p>
+                <p className="text-xs sm:text-sm text-slate-400">Autonomous dynamic trip orchestration</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30">
-                <ShieldCheck className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30">
+                <ShieldCheck className="h-5.5 w-5.5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">100% Verified Escrow</p>
-                <p className="text-xs text-slate-400">Instant refundable fares & 3DS guarantee</p>
+                <p className="text-sm sm:text-base font-bold text-white">100% Verified Escrow</p>
+                <p className="text-xs sm:text-sm text-slate-400">Instant refundable fares & 3DS guarantee</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/30">
-                <Award className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/30">
+                <Award className="h-5.5 w-5.5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">360° VR Previews</p>
-                <p className="text-xs text-slate-400">Inspect suites & flights before booking</p>
+                <p className="text-sm sm:text-base font-bold text-white">360° VR Previews</p>
+                <p className="text-xs sm:text-sm text-slate-400">Inspect suites & flights before booking</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30">
-                <Headphones className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30">
+                <Headphones className="h-5.5 w-5.5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">24/7 Global SOS Desk</p>
-                <p className="text-xs text-slate-400">Live human agents + emergency flight recovery</p>
+                <p className="text-sm sm:text-base font-bold text-white">24/7 Global SOS Desk</p>
+                <p className="text-xs sm:text-sm text-slate-400">Live human agents + emergency flight recovery</p>
               </div>
             </div>
           </div>
@@ -56,7 +56,7 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* Main Footer Links */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] px-4 py-12 sm:px-6 lg:px-10">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           {/* Brand Col */}
           <div className="col-span-2 space-y-4">

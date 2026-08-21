@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Volume2, VolumeX, Compass, Sparkles, MapPin, Eye } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
 import { aiAPI } from "../../lib/api/ai";
+import { analyticsService } from "../../services/analyticsService";
 import { Button, Badge } from "../ui";
 import { useToast } from "../ui/Toast";
 import { ReactPhotoSphereViewer } from "react-photo-sphere-viewer";
@@ -23,7 +24,13 @@ export const VRViewerModal: React.FC = () => {
     if (activeVRScene) {
       setActiveHotspot(null);
       setAiNarration(null);
-      analyticsService.trackEvent("vr_opened", { sceneId: activeVRScene.id, sceneTitle: activeVRScene.title });
+      try {
+        if (typeof analyticsService !== "undefined" && analyticsService?.trackEvent) {
+          analyticsService.trackEvent("vr_opened", { sceneId: activeVRScene.id, sceneTitle: activeVRScene.title });
+        }
+      } catch (err) {
+        console.warn("Analytics tracking failed:", err);
+      }
     }
   }, [activeVRScene]);
 
@@ -35,12 +42,13 @@ export const VRViewerModal: React.FC = () => {
     const contextDesc = hotspotContext ? hotspotContext.description : activeVRScene.destination;
 
     try {
-      const result = await aiAPI.chat(
-        activeVRScene.id,
-        contextTitle,
-        contextDesc
-      );
-      setAiNarration(result.message);
+      const result = await aiAPI.chat({
+        message: `Provide an atmospheric, poetic voice narration for ${contextTitle} (${contextDesc}). Describe the vista, architecture, and mood in 2-3 vivid sentences.`,
+        context: { user_id: "traveler", role: "traveler" }
+      });
+      if (result?.message) {
+        setAiNarration(result.message);
+      }
     } catch {
       setAiNarration(
         `Welcome to ${contextTitle}. You are currently gazing across pristine views of ${contextDesc}. Notice the extraordinary light reflections and natural architectural harmony. Enjoy this immersive preview of your next great journey.`

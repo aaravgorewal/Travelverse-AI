@@ -50,15 +50,32 @@ export interface RequestOtpResponse {
 
 export const authService = {
   // 1. Password Login
-  async loginWithPassword(email: string, password: string): Promise<LoginResponse> {
-    return apiClient.post("/v1/auth/login", {
-      type: "password",
-      email,
-      password,
+    async loginWithPassword(email: string, password: string): Promise<LoginResponse> {
+    const formData = new URLSearchParams();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const data: any = await apiClient.post("/v1/auth/login", formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
+    
+    return {
+        success: true,
+        token: data.access_token,
+        refreshToken: data.refresh_token,
+        user: {} as any // We will fetch user right after
+    } as any;
   },
-
-  // 2. Google SSO Login
+  
+  async getCurrentUser(): Promise<UserProfile> {
+    const data: any = await apiClient.get("/v1/auth/me");
+    return data;
+  },
+  
+  async logout(): Promise<void> {
+    await apiClient.post("/v1/auth/logout");
+  },
+// 2. Google SSO Login
   async loginWithGoogle(googleUser: {
     email: string;
     name: string;

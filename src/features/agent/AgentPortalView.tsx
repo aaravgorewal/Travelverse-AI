@@ -228,7 +228,7 @@ export const AgentPortalView: React.FC = () => {
     }
   };
 
-  const isMockMode = import.meta.env?.VITE_MOCK_MODE !== 'false';
+  const isMockMode = (import.meta as any).env?.VITE_MOCK_MODE !== 'false';
 
   return (
     <div className="flex min-h-[calc(100vh-2rem)] bg-slate-50 dark:bg-slate-950 -mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8">

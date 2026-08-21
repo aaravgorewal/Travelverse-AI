@@ -51,7 +51,7 @@ class GeminiProvider(AIProvider):
         else:
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         
-        self.default_model = settings.GEMINI_MODEL_DEFAULT
+        self.default_model = settings.GEMINI_MODEL
         self.default_timeout = 30.0 # seconds
 
     def _ensure_client(self):

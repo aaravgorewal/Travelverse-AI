@@ -1,76 +1,94 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
+import { aiAPI, AIResponse } from "../lib/api/ai";
+import { useUIStore } from "../stores/useUIStore";
 
-export interface UseAIActionState<T> {
+export type AIActionStatus = "idle" | "loading" | "success" | "error" | "unavailable" | "confirmation_required";
+
+interface AIActionState<T> {
+  status: AIActionStatus;
   data: T | null;
-  isLoading: boolean;
-  error: Error | null;
-  isEmpty: boolean;
-  requiresConfirmation: boolean;
-  warnings: string[];
+  error: string | null;
+  rawResponse: AIResponse | null;
 }
 
-export function useAIAction<TArgs extends any[], TResult>(
-  actionFn: (...args: TArgs) => Promise<TResult>
-) {
-  const [state, setState] = useState<UseAIActionState<TResult>>({
+export function useAIAction<T = any>() {
+  const { addToast: showToast } = useUIStore(); // Fallback if showToast missing
+  const toastMethod = (useUIStore() as any).showToast || (useUIStore() as any).addToast;
+  const [state, setState] = useState<AIActionState<T>>({
+    status: "idle",
     data: null,
-    isLoading: false,
     error: null,
-    isEmpty: true,
-    requiresConfirmation: false,
-    warnings: [],
+    rawResponse: null,
   });
 
-  const execute = useCallback(
-    async (...args: TArgs): Promise<TResult | null> => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      try {
-        const result = await actionFn(...args);
-        
-        // Handle standardized AIResponse if returned
-        const isAIResponse = result && typeof result === 'object' && 'request_id' in result;
-        
-        let warnings: string[] = [];
-        let requiresConfirmation = false;
-        
-        if (isAIResponse) {
-           const aiRes = result as any;
-           warnings = aiRes.warnings || [];
-           requiresConfirmation = warnings.some(w => w.toLowerCase().includes('confirmation'));
-        }
-
-        setState({
-          data: result,
-          isLoading: false,
-          error: null,
-          isEmpty: false, // Could check if data is functionally empty
-          requiresConfirmation,
-          warnings,
-        });
-
-        return result;
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: error instanceof Error ? error : new Error(String(error)),
-        }));
-        return null;
-      }
-    },
-    [actionFn]
-  );
-
   const reset = useCallback(() => {
-    setState({
-      data: null,
-      isLoading: false,
-      error: null,
-      isEmpty: true,
-      requiresConfirmation: false,
-      warnings: [],
-    });
+    setState({ status: "idle", data: null, error: null, rawResponse: null });
   }, []);
+
+  const execute = useCallback(async (
+    apiMethod: (...args: any[]) => Promise<AIResponse>,
+    args: any[],
+    options?: {
+      onSuccess?: (data: T, response: AIResponse) => void;
+      onError?: (error: string) => void;
+      showToastOnError?: boolean;
+    }
+  ) => {
+    setState(prev => ({ ...prev, status: "loading", error: null }));
+    
+    try {
+      const response = await apiMethod(...args);
+      
+      // Handle ActionGateway confirmation requests
+      if (response.data && response.data.status === "failed" && response.data.error?.includes("Reconfirmation")) {
+        setState({
+          status: "confirmation_required",
+          data: response.data as T,
+          error: response.data.error,
+          rawResponse: response
+        });
+        return;
+      }
+      
+      setState({
+        status: "success",
+        data: response.data as T,
+        error: null,
+        rawResponse: response
+      });
+      
+      if (options?.onSuccess) {
+        options.onSuccess(response.data as T, response);
+      }
+      
+    } catch (err: any) {
+      console.error("AI Action Error:", err);
+      
+      // Determine if it's a provider unavailability (503 / network error)
+      const isUnavailable = err.message?.includes("503") || err.message?.includes("Network Error") || err.message?.includes("timeout");
+      
+      const errorMsg = err.response?.data?.error || err.message || "Failed to complete AI action.";
+      
+      setState({
+        status: isUnavailable ? "unavailable" : "error",
+        data: null,
+        error: errorMsg,
+        rawResponse: null
+      });
+      
+      if (options?.onError) {
+        options.onError(errorMsg);
+      }
+      
+      if (options?.showToastOnError !== false) {
+        toastMethod({
+          title: isUnavailable ? "Service Unavailable" : "Action Failed",
+          message: errorMsg,
+          type: "error"
+        });
+      }
+    }
+  }, [showToast]);
 
   return { ...state, execute, reset };
 }

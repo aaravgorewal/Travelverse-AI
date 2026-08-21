@@ -49,7 +49,7 @@ export const SupportView: React.FC = () => {
 
     try {
       const res = await aiAPI.support({
-        issueType: issueTopic,
+        booking_id: issueTopic,
         issueDescription: issueDesc,
         userLocation: activeTrip?.destination || "Unknown Location",
         urgency: "high"

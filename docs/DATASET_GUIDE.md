@@ -1,15 +1,17 @@
-# Dataset & Mock Data Guide
+# Dataset & Knowledge Base Guide
 
-## RAG Requirements
-To support accurate `GroundingGuard` evaluation and policy inquiries, documents must be embedded into the PostgreSQL `pgvector` store. 
-- Use the `rag_pipeline.py` utility to ingest Markdown or PDF documents.
-- The `type` metadata field must be populated (e.g. `policy`, `guide`, `hotel_spec`).
+TRAVELVERSE leverages a vector knowledge base to ground the LLM's responses regarding travel policies, destination guides, and visa rules.
 
-## Database Standards
-The backend relies on SQLAlchemy. No frontend component is permitted to access the database or raw connection string.
-- All ORM definitions reside in `backend/app/models/`.
-- Ensure Alembic is run (`alembic upgrade head`) before starting the server.
+## Ingestion Pipeline
+To add new documents into the system:
 
-## Mock Mode
-When `VITE_MOCK_MODE=true` is set, the backend skips all calls to Google Maps, TBO, Gemini, and the live DB. It returns static mocked `AIResponse` envelopes.
-Every mock response strictly includes `mock: true` in the metadata, triggering the frontend to render "Demo Data" badges.
+1. Place raw text or PDF documents into a staging directory (or upload via the admin portal).
+2. The `KnowledgeIngestionService` (`backend/app/services/ingestion.py`) parses the documents.
+3. The parsed text is split into chunks of ~500 tokens with slight overlap.
+4. Each chunk is sent to the `GeminiEmbeddingProvider` to calculate its vector representation.
+5. The chunks are saved in the `knowledge_chunks` table within Supabase, using the `pgvector` data type for the embedding column.
+
+## Updating Vectors
+To flush or recalculate embeddings (e.g., if switching embedding models):
+1. Issue a TRUNCATE to the `knowledge_chunks` table.
+2. Re-run the `KnowledgeIngestionService.process_all()` script.

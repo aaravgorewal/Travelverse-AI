@@ -102,7 +102,7 @@ export const CustomersView: React.FC = () => {
     setPersonalizeError(null);
     try {
       const res = await aiAPI.personalize({
-        userProfile: { name: customer.name, tier: customer.tier },
+        context: { name: customer.name, tier: customer.tier },
         travelPreferences: { 
           budget: customer.budgetTier, 
           dietary: customer.dietaryPreference, 

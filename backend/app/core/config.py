@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: Optional[str] = "gemini-1.5-flash"
     
+    MODEL_CLASSIFICATION: str = "gemini-1.5-flash"
+    MODEL_SIMPLE_CHAT: str = "gemini-1.5-flash"
+    MODEL_RECOMMENDATION: str = "gemini-1.5-pro"
+    MODEL_TRIP_PLANNING: str = "gemini-1.5-pro"
+    MODEL_COMPLEX_REASONING: str = "gemini-1.5-pro"
+    MODEL_SUMMARIZATION: str = "gemini-1.5-flash"
+    MODEL_TRANSLATION: str = "gemini-1.5-flash"
+    
     # Optional Providers
     GOOGLE_MAPS_API_KEY: Optional[str] = None
     TBO_API_KEY: Optional[str] = None

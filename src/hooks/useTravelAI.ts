@@ -1,17 +1,18 @@
+export type AIRequestOptions = any;
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  GenerateTripPlanParams,
-  TripContextData,
-  ChatParams,
-  RecommendParams,
-  ExplainParams,
-  OptimizeParams,
-  ReduceCostParams,
-  PersonalizeParams,
-  PackingListParams,
-  SupportParams,
-  CompareParams,
-  AIRequestOptions,
+
+  OptimizeItineraryRequest,
+  OptimizeBudgetRequest,
+  CompareRequest,
+  ExplainRequest,
+  RecommendRequest,
+  DestinationRequest,
+  PackingListRequest,
+  TravelPulseRequest,
+  SupportRequest,
+  PersonalizeRequest,
+  AIChatRequest,
 } from "../lib/api/ai";
 import { aiAPI as aiService } from "../lib/api/ai";
 
@@ -27,10 +28,14 @@ export type AIActionName =
   | "support"
   | "compare";
 
+export type AIActionStatus = 'idle' | 'loading' | 'success' | 'error' | 'unavailable' | 'confirmation_required';
+
 export interface ActionState<T = any> {
   loading: boolean;
   success: boolean;
   error: Error | string | null;
+  status?: AIActionStatus;
+  rawResponse?: any;
   data: T | null;
   timestamp?: number;
 }
@@ -59,16 +64,16 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // Per-action discrete states
   const [actionStates, setActionStates] = useState<Record<AIActionName, ActionState>>({
-    chat: { loading: false, success: false, error: null, data: null },
-    planTrip: { loading: false, success: false, error: null, data: null },
-    recommend: { loading: false, success: false, error: null, data: null },
-    explain: { loading: false, success: false, error: null, data: null },
-    optimize: { loading: false, success: false, error: null, data: null },
-    reduceCost: { loading: false, success: false, error: null, data: null },
-    personalize: { loading: false, success: false, error: null, data: null },
-    packingList: { loading: false, success: false, error: null, data: null },
-    support: { loading: false, success: false, error: null, data: null },
-    compare: { loading: false, success: false, error: null, data: null },
+    chat: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    planTrip: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    recommend: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    explain: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    optimize: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    reduceCost: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    personalize: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    packingList: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    support: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
+    compare: { loading: false, success: false, error: null, data: null, status: 'idle', rawResponse: null },
   });
 
   // Track active abort controllers & timeout timers
@@ -233,7 +238,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 1. Chat
   const chat = useCallback(
-    (params: ChatParams, options?: AIRequestOptions): Promise<ChatResponse> => {
+    (params: AIChatRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("chat", (p, opt) => aiService.chat(p, opt), params, options);
     },
     [executeAction]
@@ -241,7 +246,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 1b. Stream Chat
   const streamChat = useCallback(
-    async (params: ChatParams, options?: AIRequestOptions): Promise<void> => {
+    async (params: AIChatRequest, options?: AIRequestOptions): Promise<void> => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
       
       const controller = new AbortController();
@@ -290,7 +295,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 2. Plan Trip
   const planTrip = useCallback(
-    (params: GenerateTripPlanParams, options?: AIRequestOptions): Promise<PlanTripResponse> => {
+    (params: any, options?: AIRequestOptions): Promise<any> => {
       return executeAction("planTrip", (p, opt) => aiService.planTrip(p, opt), params, options);
     },
     [executeAction]
@@ -298,7 +303,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 3. Recommend
   const recommend = useCallback(
-    (params: RecommendParams, options?: AIRequestOptions): Promise<RecommendResponse> => {
+    (params: RecommendRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("recommend", (p, opt) => aiService.recommend(p, opt), params, options);
     },
     [executeAction]
@@ -306,7 +311,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 4. Explain
   const explain = useCallback(
-    (params: ExplainParams, options?: AIRequestOptions): Promise<ExplainResponse> => {
+    (params: ExplainRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("explain", (p, opt) => aiService.explain(p, opt), params, options);
     },
     [executeAction]
@@ -314,23 +319,23 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 5. Optimize
   const optimize = useCallback(
-    (params: OptimizeParams, options?: AIRequestOptions): Promise<OptimizeResponse> => {
-      return executeAction("optimize", (p, opt) => aiService.optimize(p, opt), params, options);
+    (params: OptimizeItineraryRequest, options?: AIRequestOptions): Promise<any> => {
+      return executeAction("optimize", (p, opt) => aiService.optimizeItinerary(p, opt), params, options);
     },
     [executeAction]
   );
 
   // 6. Reduce Cost
   const reduceCost = useCallback(
-    (params: ReduceCostParams, options?: AIRequestOptions): Promise<ReduceCostResponse> => {
-      return executeAction("reduceCost", (p, opt) => aiService.reduceCost(p, opt), params, options);
+    (params: OptimizeBudgetRequest, options?: AIRequestOptions): Promise<any> => {
+      return executeAction("reduceCost", (p, opt) => aiService.optimizeBudget(p, opt), params, options);
     },
     [executeAction]
   );
 
   // 7. Personalize
   const personalize = useCallback(
-    (params: PersonalizeParams, options?: AIRequestOptions): Promise<PersonalizeResponse> => {
+    (params: PersonalizeRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("personalize", (p, opt) => aiService.personalize(p, opt), params, options);
     },
     [executeAction]
@@ -338,7 +343,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 8. Packing List
   const packingList = useCallback(
-    (params: PackingListParams, options?: AIRequestOptions): Promise<PackingListResponse> => {
+    (params: PackingListRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("packingList", (p, opt) => aiService.packingList(p, opt), params, options);
     },
     [executeAction]
@@ -346,7 +351,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 9. Support
   const support = useCallback(
-    (params: SupportParams, options?: AIRequestOptions): Promise<SupportResponse> => {
+    (params: SupportRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("support", (p, opt) => aiService.support(p, opt), params, options);
     },
     [executeAction]
@@ -354,7 +359,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
 
   // 10. Compare
   const compare = useCallback(
-    (params: CompareParams, options?: AIRequestOptions): Promise<CompareResponse> => {
+    (params: CompareRequest, options?: AIRequestOptions): Promise<any> => {
       return executeAction("compare", (p, opt) => aiService.compare(p, opt), params, options);
     },
     [executeAction]

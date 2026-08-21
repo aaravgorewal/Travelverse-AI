@@ -12,6 +12,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.core.errors import setup_exception_handlers
+setup_exception_handlers(app)
+
 from sqlalchemy import text
 from app.database.session import SessionLocal
 

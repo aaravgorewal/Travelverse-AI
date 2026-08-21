@@ -5,7 +5,9 @@ import {
 } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
 import { useI18nStore } from "../../stores/useI18nStore";
-import { aiAPI } from "../../lib/api/ai";
+import { aiAPI, AIChatRequest } from "../../lib/api/ai";
+import { useAIAction } from "../../hooks/useAIAction";
+import { analyticsService } from "../../services/analyticsService";
 import { Button, Badge, AISkeletonLoader } from "../ui";
 
 type AgentPersona = "concierge" | "flight_scout" | "foodie" | "luxury_host" | "budget_hacker" | "visa_guide";
@@ -23,7 +25,8 @@ export const AIConciergeDrawer: React.FC = () => {
   const { isAIConciergeOpen, setAIConciergeOpen, setModule, aiInitialPrompt, clearAIInitialPrompt } = useUIStore();
   const [activePersona, setActivePersona] = useState<AgentPersona>("concierge");
   const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { execute, status, error, reset } = useAIAction();
+  const isLoading = status === "loading";
   const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; suggestedActions?: string[]; timestamp: string }[]>([
     {
       id: "m-init",
@@ -191,47 +194,53 @@ export const AIConciergeDrawer: React.FC = () => {
     setInputMessage("");
     setIsLoading(true);
     setVoiceState("processing");
-    analyticsService.trackEvent("ai_prompt_sent", { messageLength: textToSend.length, activePersona });
+    try {
+      analyticsService.trackEvent("ai_prompt_sent", { messageLength: textToSend.length, activePersona });
+    } catch (err) {
+      console.warn("AI prompt analytics failed:", err);
+    }
 
     try {
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiAPI.chat({
+      const payload: AIChatRequest = {
         message: textToSend,
-        conversationHistory: history,
-        agentPersona: activePersona,
-        language: useI18nStore.getState().language,
-      });
-
-      const assistantMsg = {
-        id: `a-${Date.now()}`,
-        role: "assistant" as const,
-        content: response.message,
-        suggestedActions: response.data?.suggestedPrompts || [],
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        conversation_id: "concierge-session"
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
-      setVoiceState("idle");
+      execute(aiAPI.chat, [payload], {
+        onSuccess: (data, response) => {
+          const assistantMsg = {
+            id: response.request_id || `a-${Date.now()}`,
+            role: "assistant" as const,
+            content: response.message,
+            suggestedActions: response.actions?.map(a => a.action) || [],
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
 
-      // Auto speak if the synthesis is enabled
-      setTimeout(() => speakText(response.reply), 200);
+          setMessages((prev) => [...prev, assistantMsg]);
+          setVoiceState("idle");
+
+          if (isSpeechSupported && shouldSpeak) {
+            setTimeout(() => speakText(response.message), 200);
+          }
+        },
+        onError: (errStr) => {
+          setVoiceState("idle");
+          // The error state is handled by the hook and will pop a toast.
+          // We can push a generic error to the chat thread too.
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              role: "assistant" as const,
+              content: `⚠️ Error: ${errStr}. Please try again.`,
+              timestamp: "Just now",
+            },
+          ]);
+        }
+      });
 
     } catch (err: any) {
-      const errorContent = `⚠️ I encountered a temporary connection glitch. However, based on our database: Tokyo has fantastic availability for September, and flights with Quantum Airways are currently on sale. Would you like me to generate a complete custom day-by-day plan?`;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: "assistant" as const,
-          content: errorContent,
-          suggestedActions: ["Open Full AI Trip Generator", "Explore Flights to Tokyo", "View 360° VR Preview"],
-          timestamp: "Just now",
-        },
-      ]);
-      setVoiceState("idle");
-      setTimeout(() => speakText("I encountered a connection glitch. We have flights on sale to Tokyo."), 200);
-    } finally {
-      setIsLoading(false);
+      console.error(err);
     }
   };
 

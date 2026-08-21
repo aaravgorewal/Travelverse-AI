@@ -26,3 +26,17 @@ class CopilotChatResult(BaseModel):
     quotation: Optional[CopilotPackage] = Field(None, description="The final package for the customer")
     agent_notes: str = Field(..., description="Internal tradeoffs, warnings, math breakdown for the agent only")
     missing_info_needed: Optional[str] = Field(None, description="If status is needs_info, what is missing")
+
+class CopilotPackageRequest(BaseModel):
+    destination: str = Field(..., description="Destination of the package.")
+    budget: float = Field(..., description="Budget limit.")
+    travelers: int = Field(..., description="Number of travelers.")
+    preferences: Optional[Dict[str, Any]] = Field(None, description="Specific preferences.")
+
+class CopilotValidateRequest(BaseModel):
+    package_id: str = Field(..., description="ID of the package to validate.")
+
+class CopilotQuoteRequest(BaseModel):
+    package_id: str = Field(..., description="ID of the package to quote.")
+    margin: Optional[float] = Field(0.10, description="Markup margin.")
+

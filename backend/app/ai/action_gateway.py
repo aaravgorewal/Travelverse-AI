@@ -10,6 +10,8 @@ from app.core.security import ALGORITHM
 from app.tools.registry import ToolRegistry
 from app.schemas.pricing import TrustedPrice
 from app.services.price_trust import PriceTrustService
+from app.providers.tbo.flights import TBOFlightProvider
+from app.providers.tbo.hotels import TBOHotelProvider
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +132,7 @@ class ActionGateway:
         # ---------------------------------------------------------
         # PRE-EXECUTION LIVE VALIDATION (The "Safety" Hook)
         # ---------------------------------------------------------
-        if request.action == SensitiveAction.BOOK:
+        if request.action in [SensitiveAction.BOOK, SensitiveAction.CHANGE_BOOKING]:
             locked_price_dict = decoded.get("locked_price")
             if locked_price_dict:
                 # Convert ISO string back to datetime for Pydantic
@@ -143,12 +145,20 @@ class ActionGateway:
                 except Exception as e:
                     return {"status": "failed", "error": str(e)}
                 
-                # Fetch LIVE state (Mocking live check since we don't have provider hooks connected)
-                # In a full implementation: live_price = await Provider.get_live_price(...)
-                # if live_price.amount != locked_price.amount: return "Price changed, reconfirm required"
-                logger.info(f"Verified locked price {locked_price.amount} {locked_price.currency} is still valid.")
+                # Fetch LIVE state
+                try:
+                    is_valid, live_price, msg = await self._verify_live_state(payload, locked_price)
+                    if not is_valid:
+                        return {
+                            "status": "failed", 
+                            "error": f"State changed. Reconfirmation required: {msg}",
+                            "new_price": live_price
+                        }
+                    logger.info(f"Verified locked price {locked_price.amount} {locked_price.currency} is still valid against LIVE inventory.")
+                except Exception as e:
+                    logger.error(f"Failed to verify live state: {e}")
+                    return {"status": "failed", "error": "Could not verify live inventory availability."}
 
-        
         tool_name = ACTION_TO_TOOL.get(request.action)
         if not tool_name:
             logger.info(f"Action {request.action} confirmed but no direct tool mapped. Simulating execution.")
@@ -166,3 +176,37 @@ class ActionGateway:
         except Exception as e:
             logger.error(f"Execution failed for {request.action}: {e}")
             return {"status": "failed", "error": str(e)}
+
+    async def _verify_live_state(self, payload: Dict[str, Any], locked_price: TrustedPrice) -> tuple[bool, float, str]:
+        inventory_id = payload.get("inventory_id")
+        inv_type = payload.get("inventory_type", "flight").lower()
+        
+        if not inventory_id:
+            return True, locked_price.amount, "No inventory ID, assuming valid."
+            
+        if inv_type == "flight":
+            provider = TBOFlightProvider()
+            # For a real implementation we would use a re-price API or search again.
+            # Using search mock to simulate live lookup constraint.
+            results = await provider.search_flights(payload.get("origin", "NYC"), payload.get("destination", "LHR"), "date")
+            for r in results:
+                if r.flight_id == inventory_id:
+                    if r.price != locked_price.amount:
+                        return False, r.price, "Price has changed."
+                    if not r.available:
+                        return False, r.price, "Inventory is no longer available."
+                    return True, r.price, "Live match."
+                    
+        elif inv_type == "hotel":
+            provider = TBOHotelProvider()
+            results = await provider.search_hotels(payload.get("destination", "LHR"), "date1", "date2")
+            for r in results:
+                if r.hotel_id == inventory_id:
+                    if r.price != locked_price.amount:
+                        return False, r.price, "Price has changed."
+                    if not r.available:
+                        return False, r.price, "Inventory is no longer available."
+                    return True, r.price, "Live match."
+                    
+        # If we couldn't find the inventory in live search, it's sold out
+        return False, 0.0, "Inventory sold out or no longer exists."

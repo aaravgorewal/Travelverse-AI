@@ -66,10 +66,10 @@ export const Badge: React.FC<BadgeProps> = ({
   };
 
   const sizeStyles = {
-    xs: "text-[10px] px-2 py-0.2 rounded-md font-semibold gap-1",
-    sm: "text-xs px-2.5 py-0.5 rounded-lg font-medium gap-1.5",
-    md: "text-sm px-3 py-1 rounded-xl font-semibold gap-1.5",
-    lg: "text-base px-4 py-1.5 rounded-2xl font-bold gap-2",
+    xs: "text-xs px-2.5 py-0.5 rounded-lg font-semibold gap-1",
+    sm: "text-xs sm:text-sm px-3 py-1 rounded-xl font-semibold gap-1.5",
+    md: "text-sm sm:text-base px-3.5 py-1.5 rounded-xl font-bold gap-1.5",
+    lg: "text-base px-4.5 py-2 rounded-2xl font-bold gap-2",
   };
 
   const showAI = aiSymbol || variant === "ai";

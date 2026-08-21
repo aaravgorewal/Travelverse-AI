@@ -18,7 +18,7 @@ export const PackMateAICard: React.FC = () => {
   // PackMate Context State (defaulted from activeTrip)
   const [context, setContext] = useState({
     destination: activeTrip?.destination || "",
-    durationDays: activeTrip?.days.length || 7,
+    duration_days: activeTrip?.days.length || 7,
     weather: activeTrip?.days[0]?.weatherForecast?.condition || "Sunny",
     activities: "Sightseeing, dining",
     travelerType: "Solo",
@@ -52,7 +52,7 @@ export const PackMateAICard: React.FC = () => {
     try {
       const res = await aiAPI.packingList({
         destination: context.destination,
-        durationDays: context.durationDays,
+        duration_days: context.durationDays,
         weatherForecast: { temp: 25, condition: context.weather },
         activities: [context.activities],
         travelers: 1,
@@ -61,7 +61,7 @@ export const PackMateAICard: React.FC = () => {
 
       // Flatten AI response into flat packingList structure
       const newList: any[] = [];
-      res.packingList.forEach(cat => {
+      res.data.packingList.forEach(cat => {
         // Map AI category to our render categories if possible, else use as is
         const mappedCat = CATEGORIES.find(c => c.toLowerCase() === cat.category.toLowerCase()) || cat.category;
         cat.items.forEach(item => {

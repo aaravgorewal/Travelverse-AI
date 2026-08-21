@@ -142,3 +142,13 @@ class ConversationService:
             
         await self.session.delete(conv)
         await self.session.commit()
+
+    async def delete_memory(self, user_id: str, key: str):
+        stmt = select(AIMemory).where(AIMemory.user_id == user_id, AIMemory.key == key)
+        result = await self.session.execute(stmt)
+        memory = result.scalar_one_or_none()
+        if not memory:
+            raise PermissionError("Memory not found or unauthorized.")
+            
+        await self.session.delete(memory)
+        await self.session.commit()

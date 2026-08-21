@@ -189,7 +189,7 @@ export const FlightsView: React.FC = () => {
       };
       
       await explain({
-        item_id: flight.id,
+        context_id: flight.id,
         item_type: "flight",
         context: flightDetails,
         query: "Provide an expert flight analysis: Is this a good value? What are the pros & cons? Any smart tips?"

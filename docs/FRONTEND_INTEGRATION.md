@@ -1,15 +1,21 @@
-# Frontend Integration Guide
+# Frontend Integration
 
-The React frontend interfaces with the backend exclusively through `src/lib/api/ai.ts`. Legacy direct calls to Gemini or mocked JSON generators inside `src/services/` have been removed.
+The React TypeScript frontend relies entirely on the FastAPI backend for all data and AI operations.
 
-## The `useAIAction` Hook
-This is the unified state manager for all AI interactions.
-- Provides `loading`, `error`, `success`, and `data` states.
-- Automatically handles the `requires_confirmation` orchestrator flag, freezing execution and rendering a confirmation modal before proceeding with sensitive actions (e.g., booking a hotel).
+## Client Configuration (`src/lib/api/ai.ts`)
+All components use the central `AIResponse` type definitions to guarantee type safety across the wire. 
 
-## Rendering Dynamic UIs
-When the backend returns `ui_actions` in the `AIResponse`, the frontend component should map these strings to local React components.
-For example, if `widget_name: "price_chart"` is returned, the frontend mounts the `<PriceChart data={props.data} />` component. 
+## UI Components & Hooks
+The frontend relies heavily on two primary hooks:
+1. `useTravelAI()`: Used for standard query-response loops (e.g., chat interfaces, single-shot trip generations).
+2. `useAIAction()`: A state machine hook explicitly designed to manage the 7 UI states of AI interactions:
+   - `loading`
+   - `success`
+   - `error`
+   - `retry`
+   - `empty`
+   - `unavailable`
+   - `confirmation` (Used when ActionGateway blocks an execution)
 
-## No Secrets
-API Keys must never be stored in `.env.local` for Vite. All LLM orchestration happens on the FastAPI backend.
+## "DEMO DATA" Banner
+If any API response contains `mock: true`, the frontend global state captures this and renders a persistent red "DEMO DATA" banner across the UI.

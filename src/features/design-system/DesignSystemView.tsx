@@ -94,7 +94,7 @@ export const DesignSystemView: React.FC = () => {
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
 
   return (
-    <div className="space-y-12 pb-24 max-w-7xl mx-auto">
+    <div className="space-y-12 pb-24 max-w-[1600px] mx-auto">
       {/* Design System Hero Header */}
       <div className="relative rounded-3xl bg-slate-950 text-white p-8 sm:p-12 border border-slate-800/80 shadow-2xl overflow-hidden">
         {/* Subtle background glow */}
