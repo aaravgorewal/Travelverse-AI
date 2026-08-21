@@ -15,6 +15,8 @@ interface UIState {
   selectedTripDetailId: string | null;
   selectedDestinationId: string | null;
   aiInitialPrompt: string | null;
+  isDealScopeOpen: boolean;
+  dealScopeData: any | null;
   
   setModule: (module: AppModule) => void;
   openVR: (scene: VRScene) => void;
@@ -30,6 +32,8 @@ interface UIState {
   setSelectedBookingDetailId: (id: string | null) => void;
   setSelectedTripDetailId: (id: string | null) => void;
   setSelectedDestinationId: (id: string | null) => void;
+  openDealScope: (data?: any) => void;
+  closeDealScope: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -46,6 +50,8 @@ export const useUIStore = create<UIState>((set) => ({
   selectedBookingDetailId: null,
   selectedTripDetailId: null,
   selectedDestinationId: null,
+  isDealScopeOpen: false,
+  dealScopeData: null,
 
   setModule: (module) =>
     set((state) => ({
@@ -67,4 +73,6 @@ export const useUIStore = create<UIState>((set) => ({
   setSelectedBookingDetailId: (id) => set({ selectedBookingDetailId: id }),
   setSelectedTripDetailId: (id) => set({ selectedTripDetailId: id }),
   setSelectedDestinationId: (id) => set({ selectedDestinationId: id }),
+  openDealScope: (data) => set({ isDealScopeOpen: true, dealScopeData: data || null }),
+  closeDealScope: () => set({ isDealScopeOpen: false, dealScopeData: null }),
 }));
