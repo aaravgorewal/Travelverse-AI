@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, JSON
+from sqlalchemy import Column, String, ForeignKey, JSON, DateTime, Float, Boolean, Integer
 from .base import Base
 
 class Conversation(Base):
@@ -20,12 +20,21 @@ class AIMemory(Base):
 
 class AIRequest(Base):
     __tablename__ = "ai_requests"
-    prompt = Column(String)
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    feature = Column(String, index=True)
+    model = Column(String)
+    request_timestamp = Column(DateTime)
+    latency = Column(Float)
+    success = Column(Boolean)
+    error_code = Column(String, nullable=True)
 
 class AIResponse(Base):
     __tablename__ = "ai_responses"
-    request_id = Column(ForeignKey("ai_requests.id", ondelete="CASCADE"))
-    content = Column(String)
+    request_id = Column(ForeignKey("ai_requests.id", ondelete="CASCADE"), unique=True)
+    response_timestamp = Column(DateTime)
+    validated = Column(Boolean, default=False)
+    confidence = Column(Float, nullable=True)
+    source_count = Column(Integer, default=0)
 
 class AIAction(Base):
     __tablename__ = "ai_actions"
