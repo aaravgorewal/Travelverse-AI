@@ -38,6 +38,7 @@ import { TravelPulseView } from "./features/travelpulse/TravelPulseView";
 import { ToastProvider } from "./components/ui/Toast";
 import { Modal, Button } from "./components/ui";
 import { ShieldAlert, LogIn, Lock } from "lucide-react";
+import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 
 export function App() {
   const { currentModule, setModule } = useUIStore();
@@ -170,7 +171,9 @@ export function App() {
 
         {/* Main Feature Viewport (Optimized for 1440px Desktop, 768px Tablet, 360px Mobile) */}
         <main className={`flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 ${isB2BPortalActive ? 'pb-4' : 'pb-24 md:pb-12'} overflow-x-hidden min-w-0`}>
-          {renderModule()}
+          <ErrorBoundary>
+            {renderModule()}
+          </ErrorBoundary>
         </main>
 
         {/* Mobile Bottom Navigation Bar */}
