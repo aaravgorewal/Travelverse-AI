@@ -5,14 +5,9 @@ from pydantic import BaseModel, Field
 
 from app.schemas.orchestration import TravelContext, UniversalAIResponse, UIAction, DataAction
 from app.ai.model_router import ModelRouter, TaskCategory
+from app.ai.intent_engine import IntentEngine, IntentResult
 
 logger = logging.getLogger(__name__)
-
-# --- Internal Schemas for Structured AI Calls ---
-class IntentClassification(BaseModel):
-    intent: str = Field(..., description="The classified intent, e.g., 'flight_search', 'general_chat', 'booking', 'cancel'")
-    confidence: float = Field(..., description="Confidence score between 0.0 and 1.0")
-    required_tools: List[str] = Field(default_factory=list, description="List of internal tool names required to fulfill this intent")
 
 class HallucinationCheck(BaseModel):
     is_hallucination: bool = Field(..., description="True if the response contains fabricated facts, prices, or locations not present in the context.")
@@ -33,6 +28,7 @@ class TravelAIOrchestrator:
 
     def __init__(self, router: ModelRouter):
         self.router = router
+        self.intent_engine = IntentEngine(router)
 
     async def execute(self, user_message: str, context: TravelContext) -> UniversalAIResponse:
         """Main execution pipeline."""
@@ -40,15 +36,15 @@ class TravelAIOrchestrator:
         # 1. Validate request
         self._validate_request(user_message, context)
         
-        # 2. Classify intent
-        intent_info = await self._classify_intent(user_message, context)
-        intent = intent_info.intent
+        # 2. Classify intent (delegated to IntentEngine)
+        intent_result = await self.intent_engine.classify(user_message, context.role)
+        intent = intent_result.intent
         
         # 3. Build context
         db_context = self._build_context(context)
         
-        # 4. Determine required tools
-        tools = self._determine_required_tools(intent_info)
+        # 4. Determine required tools (from IntentEngine metadata)
+        tools = self._determine_required_tools(intent_result)
         
         # 5. Retrieve RAG knowledge if needed
         rag_knowledge = await self._retrieve_rag_knowledge(intent, user_message)
@@ -97,18 +93,6 @@ class TravelAIOrchestrator:
         if not context.user_id or not context.role:
             raise ValueError("TravelContext must include user_id and role.")
 
-    async def _classify_intent(self, message: str, context: TravelContext) -> IntentClassification:
-        system_instruction = "You are an intent classifier for a travel AI. Output JSON conforming to the schema."
-        prompt = f"User role: {context.role}\nMessage: {message}"
-        
-        result = await self.router.generate_structured(
-            task_category=TaskCategory.CLASSIFICATION,
-            prompt=prompt,
-            schema=IntentClassification,
-            system_instruction=system_instruction
-        )
-        return result
-
     def _build_context(self, context: TravelContext) -> Dict[str, Any]:
         # In a real scenario, this fetches from the DB using Repositories based on context.active_trip_id etc.
         return {
@@ -118,11 +102,9 @@ class TravelAIOrchestrator:
             "trip_data": "DB Fetch Simulation" if context.active_trip_id else None
         }
 
-    def _determine_required_tools(self, intent_info: IntentClassification) -> List[str]:
-        # Maps the AI's requested tools to actual registered backend functions.
-        # Hardcoding a whitelist check here ensures security.
-        allowed_tools = ["search_flights", "search_hotels", "get_weather"]
-        return [tool for tool in intent_info.required_tools if tool in allowed_tools]
+    def _determine_required_tools(self, intent_result: IntentResult) -> List[str]:
+        # Tools are now resolved from the static IntentEngine metadata, not AI hallucination.
+        return intent_result.required_tools
 
     async def _retrieve_rag_knowledge(self, intent: str, message: str) -> str:
         # If intent is general info or planning, query pgvector.
