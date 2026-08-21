@@ -1,79 +1,80 @@
 import logging
-from typing import List, Dict, Any
+import json
+from typing import List, Dict
 
 from app.schemas.local_sense import DestinationKnowledgeRequest, DestinationKnowledgeResult
 from app.ai.model_router import ModelRouter, TaskCategory
+from app.services.rag_pipeline import RagPipelineService
 
 logger = logging.getLogger(__name__)
 
 class LocalSenseService:
     """
-    Destination intelligence engine.
-    Uses RAG to pull cultural and regulatory context, separating soft advice from hard regulations.
+    Destination intelligence engine using RAG.
+    Retrieves facts from database and strictly segregates soft advice from hard regulations.
     """
     
     SYSTEM_INSTRUCTION = """
-    You are LocalSense for TRAVELVERSE AI. Your job is to extract and synthesize destination knowledge.
+    You are LocalSense for TRAVELVERSE AI. Your job is to summarize destination knowledge based ONLY on the provided RAG chunks.
     
     CRITICAL RULES:
-    1. Base your answer ONLY on the provided RAG Context Data.
-    2. You MUST strictly separate soft cultural norms (general_advice) from hard legal/border rules (official_regulations).
-       - "Tipping 10% is customary" -> general_advice
-       - "A tourist visa is required for stays over 30 days" -> official_regulations
-    3. Include the source identifiers from the Context Data in your 'sources' array.
+    1. Base your answer ONLY on the provided RAG Context. Do not invent cultural norms or laws.
+    2. You MUST strictly categorize your response into four buckets: culture_and_etiquette, food_and_transport, general_advice, official_regulations.
+    3. Put soft norms ("Tipping 10% is customary") in general_advice or culture.
+    4. Put hard rules ("A tourist visa is required", "Alcohol is illegal") in official_regulations.
+    5. You must include the source IDs of the chunks you used.
     """
 
     def __init__(self, router: ModelRouter):
         self.router = router
-
-    async def _mock_rag_retrieval(self, destination: str) -> List[Dict[str, str]]:
-        """
-        Mocks the vector DB retrieval until the pgvector ingestion pipeline is fully wired.
-        """
-        # In a real app, this would use a library like LangChain/LlamaIndex or raw pgvector SQL 
-        # to embed the query and fetch top-K chunks.
-        return [
-            {
-                "source_id": f"rag_doc_{destination.lower().replace(' ', '_')}_culture",
-                "content": f"In {destination}, it is considered polite to dress modestly. Tipping is generally around 10-15%."
-            },
-            {
-                "source_id": f"rag_doc_{destination.lower().replace(' ', '_')}_law",
-                "content": f"Visitors to {destination} must carry a valid passport with at least 6 months validity. Certain medications are strictly prohibited by customs."
-            },
-            {
-                "source_id": f"rag_doc_{destination.lower().replace(' ', '_')}_transit",
-                "content": f"The public metro system in {destination} is highly efficient. Ride-sharing apps are widely available."
-            }
-        ]
+        self.rag = RagPipelineService()
 
     async def get_destination_knowledge(self, request: DestinationKnowledgeRequest) -> DestinationKnowledgeResult:
-        logger.info(f"Fetching LocalSense knowledge for {request.destination}")
+        logger.info(f"Retrieving destination knowledge for {request.destination}")
         
-        # 1. RAG Retrieval (Mocked for MVP)
-        rag_snippets = await self._mock_rag_retrieval(request.destination)
+        # 1. Real RAG Retrieval
+        query = f"Destination: {request.destination}. Questions: {', '.join(request.specific_questions)}"
+        retrieved_chunks = await self.rag.retrieve_context(
+            query=query, 
+            category_filter="destination", 
+            top_k=5
+        )
         
-        # 2. Construct Prompt
+        # Format the retrieved chunks for the prompt
+        rag_context = []
+        for c in retrieved_chunks:
+            rag_context.append({
+                "source_id": c.chunk_id,
+                "document_id": c.document_id,
+                "text": c.text_content
+            })
+            
+        source_ids = [c["source_id"] for c in rag_context]
+        
+        # 2. Construct Prompt for Gemini
         prompt = f"""
         Destination: {request.destination}
-        User Specific Questions: {request.specific_questions}
+        User Questions: {request.specific_questions}
         
-        RAG Context Data (ONLY USE THIS DATA):
-        {rag_snippets}
+        RAG Context (Use ONLY this data):
+        {json.dumps(rag_context, indent=2)}
         
-        Synthesize the knowledge. Remember to separate advice from strict regulations.
+        Generate the structured destination profile.
         """
         
         # 3. AI Synthesis
         try:
             result: DestinationKnowledgeResult = await self.router.generate_structured(
-                task_category=TaskCategory.DESTINATION_INFO,
+                task_category=TaskCategory.KNOWLEDGE_RETRIEVAL,
                 prompt=prompt,
                 schema=DestinationKnowledgeResult,
                 system_instruction=self.SYSTEM_INSTRUCTION
             )
+            
+            # Ensure sources are tracked
+            result.sources = source_ids
             return result
             
         except Exception as e:
-            logger.error(f"LocalSense AI synthesis failed: {e}")
+            logger.error(f"LocalSense AI generation failed: {e}")
             raise RuntimeError("Failed to generate destination knowledge.")
