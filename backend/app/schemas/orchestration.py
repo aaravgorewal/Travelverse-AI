@@ -1,0 +1,36 @@
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+
+class TravelContext(BaseModel):
+    """
+    Contextual wrapper providing environmental grounding for the orchestrator.
+    """
+    user_id: str
+    role: str = Field(..., description="Role of the user (e.g., 'traveler', 'agent')")
+    session_id: Optional[str] = None
+    active_trip_id: Optional[str] = None
+    location_context: Optional[str] = None
+    preferences: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    recent_searches: Optional[List[str]] = Field(default_factory=list)
+
+class UIAction(BaseModel):
+    """Represents a frontend widget to render."""
+    widget_name: str
+    props: Dict[str, Any] = Field(default_factory=dict)
+
+class DataAction(BaseModel):
+    """Represents a backend API or tool call required."""
+    action_type: str
+    endpoint: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+class UniversalAIResponse(BaseModel):
+    """
+    The standardized output structure returned by the TravelAIOrchestrator to the frontend.
+    """
+    text: str = Field(..., description="The conversational response to display to the user.")
+    ui_actions: List[UIAction] = Field(default_factory=list, description="Widgets the frontend should render.")
+    data_actions: List[DataAction] = Field(default_factory=list, description="Data operations or pending tool calls.")
+    requires_confirmation: bool = Field(default=False, description="Flag indicating if the user must explicitly approve the action.")
+    hallucination_flag: bool = Field(default=False, description="Flag indicating if the guard detected a potential hallucination.")
+    intent: Optional[str] = Field(None, description="The classified intent of the user request.")
