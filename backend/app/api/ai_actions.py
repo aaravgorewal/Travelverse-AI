@@ -327,3 +327,37 @@ async def recommend(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.local_sense import DestinationKnowledgeRequest
+from app.services.local_sense import LocalSenseService
+
+_local_sense_service = LocalSenseService(router=_model_router)
+
+def get_local_sense_service() -> LocalSenseService:
+    return _local_sense_service
+
+@router.post("/destination", response_model=AIResponse)
+async def get_destination_knowledge(
+    request: DestinationKnowledgeRequest,
+    service: LocalSenseService = Depends(get_local_sense_service)
+) -> AIResponse:
+    """
+    LocalSense endpoint.
+    Destination intelligence engine using RAG to pull cultural and regulatory context.
+    """
+    try:
+        result = await service.get_destination_knowledge(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="LocalSense",
+            message=f"Here is what you need to know about {request.destination}.",
+            data=result.model_dump(),
+            actions=[],
+            sources=result.sources,
+            warnings=[],
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
