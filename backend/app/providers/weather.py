@@ -1,64 +1,85 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
-import httpx
 import logging
+import httpx
+import os
+import json
+import hashlib
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional, List
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Internal Normalized Schemas
+# ---------------------------------------------------------------------------
+
+class BaseWeatherResult(BaseModel):
+    source: str = "weatherapi"
+    live: bool = True
+    available: bool = True
+    error_reason: Optional[str] = None
+
+class WeatherData(BaseModel):
+    temperature: float = 0.0
+    conditions: str = ""
+    precipitation: float = 0.0
+    wind: float = 0.0
+    timestamp: str = ""
+
+class WeatherResult(BaseWeatherResult, WeatherData):
+    pass
+
+class ForecastResult(BaseWeatherResult):
+    forecast_days: List[WeatherData] = []
 
 # ---------------------------------------------------------------------------
-# Fallback structure
+# Simple TTL Cache
 # ---------------------------------------------------------------------------
 
-UNAVAILABLE_WEATHER_RESPONSE = {
-    "source": "weather_provider",
-    "live": False,
-    "available": False,
-    "status": "data_unavailable"
-}
+class WeatherCache:
+    def __init__(self, ttl_seconds: int = 1800): # 30 mins TTL
+        self.ttl = timedelta(seconds=ttl_seconds)
+        self._store: Dict[str, tuple[datetime, Any]] = {}
 
+    def get(self, key: str) -> Optional[Any]:
+        entry = self._store.get(key)
+        if entry and (datetime.utcnow() - entry[0]) < self.ttl:
+            return entry[1]
+        return None
 
-class WeatherProvider(ABC):
+    def set(self, key: str, value: Any):
+        self._store[key] = (datetime.utcnow(), value)
+
+_weather_cache = WeatherCache()
+
+# ---------------------------------------------------------------------------
+# Provider Implementation
+# ---------------------------------------------------------------------------
+
+class ConfiguredWeatherProvider:
     """
-    Abstract interface for Weather APIs.
-    Ensures the LLM never fabricates weather by forcing a strict contract.
-    """
-
-    @abstractmethod
-    async def get_current_weather(self, lat: float, lng: float) -> Dict[str, Any]:
-        pass
-
-    @abstractmethod
-    async def get_forecast(self, lat: float, lng: float, days: int = 5) -> Dict[str, Any]:
-        pass
-
-
-class ConfiguredWeatherProvider(WeatherProvider):
-    """
-    Standard implementation using a weather API (e.g., OpenWeatherMap or WeatherAPI).
-    Currently implemented against a generic structure, adjustable to the exact endpoint.
+    Standard implementation using WeatherAPI.
+    Never fabricates current weather. Returns unavailable if network fails.
     """
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.WEATHER_API_KEY
-        self.base_url = "https://api.weatherapi.com/v1" # Example default
+        self.base_url = "https://api.weatherapi.com/v1"
         self.timeout = 10.0
-        # Fallback 1: Local cache to serve data if API is down
-        self._weather_cache: Dict[str, Any] = {}
 
-    async def get_current_weather(self, lat: float, lng: float) -> Dict[str, Any]:
+    async def get_current_weather(self, lat: float, lng: float) -> WeatherResult:
         cache_key = f"current_{lat}_{lng}"
         
+        cached = _weather_cache.get(cache_key)
+        if cached:
+            return cached
+            
         if not self.api_key:
-            logger.warning("WEATHER_API_KEY is missing. Checking cache.")
-            return self._weather_cache.get(cache_key, UNAVAILABLE_WEATHER_RESPONSE)
+            return WeatherResult(live=False, available=False, error_reason="credentials_missing")
 
         url = f"{self.base_url}/current.json"
-        params = {
-            "key": self.api_key,
-            "q": f"{lat},{lng}"
-        }
+        params = {"key": self.api_key, "q": f"{lat},{lng}"}
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -66,39 +87,34 @@ class ConfiguredWeatherProvider(WeatherProvider):
                 resp.raise_for_status()
                 data = resp.json()
                 
-                # Standardize the payload
-                result = {
-                    "source": "weatherapi",
-                    "live": True,
-                    "available": True,
-                    "location": data.get("location", {}).get("name"),
-                    "temp_c": data.get("current", {}).get("temp_c"),
-                    "condition": data.get("current", {}).get("condition", {}).get("text"),
-                    "raw": data
-                }
-                self._weather_cache[cache_key] = result
+                current = data.get("current", {})
+                result = WeatherResult(
+                    temperature=current.get("temp_c", 0.0),
+                    conditions=current.get("condition", {}).get("text", "Unknown"),
+                    precipitation=current.get("precip_mm", 0.0),
+                    wind=current.get("wind_kph", 0.0),
+                    timestamp=current.get("last_updated", "")
+                )
+                
+                _weather_cache.set(cache_key, result)
                 return result
+                
         except Exception as e:
             logger.error(f"Weather API failed for current weather: {e}")
-            if cache_key in self._weather_cache:
-                logger.info("Serving current weather from fallback cache.")
-                return self._weather_cache[cache_key]
-            # Fallback 2: Unavailable
-            return UNAVAILABLE_WEATHER_RESPONSE
+            return WeatherResult(live=False, available=False, error_reason="api_unavailable")
 
-    async def get_forecast(self, lat: float, lng: float, days: int = 5) -> Dict[str, Any]:
+    async def get_forecast(self, lat: float, lng: float, days: int = 5) -> ForecastResult:
         cache_key = f"forecast_{lat}_{lng}_{days}"
         
+        cached = _weather_cache.get(cache_key)
+        if cached:
+            return cached
+            
         if not self.api_key:
-            logger.warning("WEATHER_API_KEY is missing. Checking cache.")
-            return self._weather_cache.get(cache_key, UNAVAILABLE_WEATHER_RESPONSE)
+            return ForecastResult(live=False, available=False, error_reason="credentials_missing")
 
         url = f"{self.base_url}/forecast.json"
-        params = {
-            "key": self.api_key,
-            "q": f"{lat},{lng}",
-            "days": min(days, 14) # Bound the maximum days based on typical API limits
-        }
+        params = {"key": self.api_key, "q": f"{lat},{lng}", "days": min(days, 14)}
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -106,19 +122,24 @@ class ConfiguredWeatherProvider(WeatherProvider):
                 resp.raise_for_status()
                 data = resp.json()
                 
-                result = {
-                    "source": "weatherapi",
-                    "live": True,
-                    "available": True,
-                    "forecast_days": data.get("forecast", {}).get("forecastday", []),
-                    "raw": data
-                }
-                self._weather_cache[cache_key] = result
+                forecast_days_data = data.get("forecast", {}).get("forecastday", [])
+                parsed_days = []
+                
+                for day_data in forecast_days_data:
+                    day_info = day_data.get("day", {})
+                    parsed_days.append(WeatherData(
+                        temperature=day_info.get("avgtemp_c", 0.0),
+                        conditions=day_info.get("condition", {}).get("text", "Unknown"),
+                        precipitation=day_info.get("totalprecip_mm", 0.0),
+                        wind=day_info.get("maxwind_kph", 0.0),
+                        timestamp=day_data.get("date", "")
+                    ))
+                
+                result = ForecastResult(forecast_days=parsed_days)
+                
+                _weather_cache.set(cache_key, result)
                 return result
+                
         except Exception as e:
             logger.error(f"Weather API failed for forecast: {e}")
-            if cache_key in self._weather_cache:
-                logger.info("Serving forecast from fallback cache.")
-                return self._weather_cache[cache_key]
-            # Fallback 2: Unavailable
-            return UNAVAILABLE_WEATHER_RESPONSE
+            return ForecastResult(live=False, available=False, error_reason="api_unavailable")
