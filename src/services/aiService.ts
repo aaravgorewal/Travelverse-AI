@@ -440,23 +440,19 @@ export const aiService = {
     requiredDocs: string[];
     advisories: string[];
   }> {
-    // Stubbed because backend doesn't have /ai/visa-check
-    return new Promise((resolve) => setTimeout(() => resolve({
-      visaRequired: true,
-      visaType: "eVisa / Tourist",
-      processingTimeDays: 3,
-      feeUsd: 50,
-      requiredDocs: ["Valid Passport (6 months)", "Return Ticket", "Proof of Accommodation"],
-      advisories: ["Apply at least 1 week before departure.", "Ensure no previous visa violations."]
-    }), 1500));
+    const config: AxiosRequestConfig = {
+      signal: options?.signal,
+      timeout: options?.timeout,
+    };
+    return apiClient.post("/ai/visa-check", { passportCountry, destinationCountry }, config);
   },
 
   async generateVRNarration(sceneId: string, sceneTitle: string, destination: string, options?: AIRequestOptions): Promise<{ audioScript: string; voiceActor: string }> {
-    // Stubbed because backend doesn't have /ai/vr-narration
-    return new Promise((resolve) => setTimeout(() => resolve({
-      audioScript: `Welcome to ${sceneTitle}. You are currently gazing across pristine views of ${destination}. Notice the extraordinary light reflections and natural architectural harmony. Enjoy this immersive preview of your next great journey.`,
-      voiceActor: "en-US-Journey-F"
-    }), 2000));
+    const config: AxiosRequestConfig = {
+      signal: options?.signal,
+      timeout: options?.timeout,
+    };
+    return apiClient.post("/ai/vr-narration", { sceneId, sceneTitle, destination }, config);
   },
 };
 
