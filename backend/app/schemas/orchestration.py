@@ -43,6 +43,11 @@ class ConfidenceLevel(str, Enum):
     MEDIUM = "medium"
     LOW = "low"
 
+import os
+
+def check_mock_mode() -> bool:
+    return os.getenv("MOCK_MODE", "true").lower() == "true"
+
 class AIResponse(BaseModel):
     """
     Standardized top-level HTTP envelope for all AI endpoints.
@@ -57,3 +62,4 @@ class AIResponse(BaseModel):
     sources: List[str] = Field(default_factory=list, description="List of knowledge base or provider sources used to ground the response.")
     warnings: List[str] = Field(default_factory=list, description="Any warnings, such as hallucination flags or fallback notices.")
     confidence: ConfidenceLevel = Field(..., description="The confidence level of the response or intent classification.")
+    mock: bool = Field(default_factory=check_mock_mode, description="Flag indicating if the response data is mocked.")

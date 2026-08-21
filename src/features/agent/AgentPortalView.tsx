@@ -228,8 +228,16 @@ export const AgentPortalView: React.FC = () => {
     }
   };
 
+  const isMockMode = import.meta.env.VITE_MOCK_MODE !== 'false';
+
   return (
     <div className="flex min-h-[calc(100vh-2rem)] bg-slate-50 dark:bg-slate-950 -mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8">
+      {isMockMode && (
+        <div className="fixed top-0 inset-x-0 z-[100] bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest text-center py-1">
+          DEMO MODE ACTIVE: Using deterministic mock data (Mock: True)
+        </div>
+      )}
+
       {/* Mobile Sidebar Toggle */}
       <div className="md:hidden absolute top-4 left-4 z-50">
         <Button variant="outline" size="sm" onClick={() => setSidebarOpen(true)} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
