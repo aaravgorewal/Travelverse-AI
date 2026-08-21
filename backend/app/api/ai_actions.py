@@ -118,3 +118,39 @@ async def chat(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.schemas.smart_route import ItineraryOptimizationRequest
+from app.services.smart_route import SmartRouteService
+from app.providers.google_maps import GoogleMapsProvider
+
+_maps_provider = GoogleMapsProvider()
+_smart_route_service = SmartRouteService(maps_provider=_maps_provider, router=_model_router)
+
+def get_smart_route_service() -> SmartRouteService:
+    return _smart_route_service
+
+@router.post("/optimize-itinerary", response_model=AIResponse)
+async def optimize_itinerary(
+    request: ItineraryOptimizationRequest,
+    service: SmartRouteService = Depends(get_smart_route_service)
+) -> AIResponse:
+    """
+    SmartRoute endpoint.
+    Optimizes an itinerary using Google Maps distance matrix and Gemini logic.
+    """
+    try:
+        result = await service.optimize(request)
+        
+        return AIResponse(
+            request_id=str(uuid.uuid4()),
+            conversation_id=str(uuid.uuid4()),
+            feature="SmartRoute",
+            message="Your itinerary has been optimized based on travel times and your preferences.",
+            data=result.model_dump(),
+            actions=[],
+            sources=["google_maps"],
+            warnings=result.warnings,
+            confidence=ConfidenceLevel.HIGH
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
