@@ -1,29 +1,17 @@
-from sqlalchemy import Uuid, Column, String, Integer, ForeignKey, JSON
-from .base import BaseModel
+from sqlalchemy import Column, String, ForeignKey, JSON, Integer
+from .base import Base
 
-class Notification(BaseModel):
+class Notification(Base):
     __tablename__ = "notifications"
-    
-    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    title = Column(String, nullable=False)
-    message = Column(String, nullable=False)
-    status = Column(String, default="unread")
-    notification_type = Column(String, nullable=True)
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"))
+    message = Column(String)
 
-class Alert(BaseModel):
+class Alert(Base):
     __tablename__ = "alerts"
-    
-    agent_id = Column(Uuid, ForeignKey("agents.id", ondelete="CASCADE"), index=True, nullable=False)
-    alert_type = Column(String, nullable=False)
-    message = Column(String, nullable=False)
-    severity = Column(String, default="info")
-    status = Column(String, default="active")
-    action_data = Column(JSON, nullable=True)
+    severity = Column(String)
+    message = Column(String)
 
-class APIUsage(BaseModel):
+class APIUsage(Base):
     __tablename__ = "api_usage"
-    
-    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
-    endpoint = Column(String, index=True, nullable=False)
-    status_code = Column(Integer, nullable=False)
-    latency_ms = Column(Integer, nullable=True)
+    endpoint = Column(String)
+    calls = Column(Integer, default=0)

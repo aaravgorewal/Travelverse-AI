@@ -1,67 +1,33 @@
-from sqlalchemy import Uuid, Column, String, Integer, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from .base import BaseModel
+from sqlalchemy import Column, String, ForeignKey, JSON
+from .base import Base
 
-class Conversation(BaseModel):
+class Conversation(Base):
     __tablename__ = "conversations"
-    
-    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    title = Column(String, nullable=True)
-    status = Column(String, default="active")
-    
-    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"))
+    context = Column(JSON, default=dict)
 
-class Message(BaseModel):
+class Message(Base):
     __tablename__ = "messages"
-    
-    conversation_id = Column(Uuid, ForeignKey("conversations.id", ondelete="CASCADE"), index=True, nullable=False)
-    role = Column(String, nullable=False) # user, assistant, system
-    content = Column(String, nullable=False)
-    
-    conversation = relationship("Conversation", back_populates="messages")
+    conversation_id = Column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    role = Column(String)
+    content = Column(String)
 
-class AIMemory(BaseModel):
+class AIMemory(Base):
     __tablename__ = "ai_memory"
-    
-    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    key = Column(String, nullable=False)
-    value = Column(JSON, nullable=False)
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"))
+    memory_key = Column(String)
+    memory_value = Column(JSON)
 
-class AIRequest(BaseModel):
+class AIRequest(Base):
     __tablename__ = "ai_requests"
-    
-    user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
-    endpoint = Column(String, nullable=False)
-    payload = Column(JSON, nullable=True)
+    prompt = Column(String)
 
-class AIResponse(BaseModel):
+class AIResponse(Base):
     __tablename__ = "ai_responses"
-    
-    request_id = Column(Uuid, ForeignKey("ai_requests.id", ondelete="CASCADE"), index=True, nullable=False)
-    response_payload = Column(JSON, nullable=True)
-    latency_ms = Column(Integer, nullable=True)
+    request_id = Column(ForeignKey("ai_requests.id", ondelete="CASCADE"))
+    content = Column(String)
 
-class AIAction(BaseModel):
+class AIAction(Base):
     __tablename__ = "ai_actions"
-    
-    response_id = Column(Uuid, ForeignKey("ai_responses.id", ondelete="CASCADE"), index=True, nullable=False)
-    action_type = Column(String, nullable=False)
-    parameters = Column(JSON, nullable=True)
-
-class KnowledgeDocument(BaseModel):
-    __tablename__ = "knowledge_documents"
-    
-    title = Column(String, nullable=False)
-    source_url = Column(String, nullable=True)
-    content_type = Column(String, nullable=True)
-    
-    chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
-
-class KnowledgeChunk(BaseModel):
-    __tablename__ = "knowledge_chunks"
-    
-    document_id = Column(Uuid, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), index=True, nullable=False)
-    content = Column(String, nullable=False)
-    # Note: embedding column would go here (pgvector)
-    
-    document = relationship("KnowledgeDocument", back_populates="chunks")
+    response_id = Column(ForeignKey("ai_responses.id", ondelete="CASCADE"))
+    action_type = Column(String)

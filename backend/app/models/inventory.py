@@ -1,61 +1,25 @@
-from sqlalchemy import Uuid, Column, String, Integer, Float, ForeignKey, JSON
-from .base import BaseModel
+from sqlalchemy import Column, String, ForeignKey, Float, JSON
+from .base import Base
 
-class Destination(BaseModel):
+class Destination(Base):
     __tablename__ = "destinations"
-    
-    name = Column(String, nullable=False, index=True)
-    country = Column(String, nullable=False)
-    region = Column(String, nullable=True)
-    description = Column(String, nullable=True)
+    name = Column(String, index=True)
+    country = Column(String)
 
-class Location(BaseModel):
+class Location(Base):
     __tablename__ = "locations"
-    
-    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=False)
-    name = Column(String, nullable=False)
-    lat = Column(Float, nullable=True)
-    lng = Column(Float, nullable=True)
+    destination_id = Column(ForeignKey("destinations.id", ondelete="CASCADE"))
+    name = Column(String)
 
-class Place(BaseModel):
+class Place(Base):
     __tablename__ = "places"
-    
-    location_id = Column(Uuid, ForeignKey("locations.id", ondelete="CASCADE"), index=True, nullable=False)
-    name = Column(String, nullable=False)
-    category = Column(String, nullable=True) # attraction, restaurant, etc.
-    details = Column(JSON, nullable=True)
+    location_id = Column(ForeignKey("locations.id", ondelete="CASCADE"))
+    name = Column(String)
+    lat = Column(Float)
+    lng = Column(Float)
 
-class Flight(BaseModel):
-    __tablename__ = "flights"
-    
-    airline = Column(String, nullable=False)
-    flight_number = Column(String, nullable=False)
-    origin = Column(String, nullable=False)
-    destination = Column(String, nullable=False)
-    departure_time = Column(String, nullable=True)
-    arrival_time = Column(String, nullable=True)
-    price = Column(Float, nullable=True)
-
-class Hotel(BaseModel):
-    __tablename__ = "hotels"
-    
-    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=True)
-    name = Column(String, nullable=False)
-    rating = Column(Float, nullable=True)
-    price_per_night = Column(Float, nullable=True)
-    amenities = Column(JSON, nullable=True)
-
-class Transfer(BaseModel):
-    __tablename__ = "transfers"
-    
-    name = Column(String, nullable=False)
-    transfer_type = Column(String, nullable=True)
-    price = Column(Float, nullable=True)
-
-class Experience(BaseModel):
-    __tablename__ = "experiences"
-    
-    destination_id = Column(Uuid, ForeignKey("destinations.id", ondelete="CASCADE"), index=True, nullable=True)
-    name = Column(String, nullable=False)
-    duration_minutes = Column(Integer, nullable=True)
-    price = Column(Float, nullable=True)
+class Activity(Base):
+    __tablename__ = "activities"
+    destination_id = Column(ForeignKey("destinations.id", ondelete="CASCADE"))
+    name = Column(String)
+    category = Column(String)

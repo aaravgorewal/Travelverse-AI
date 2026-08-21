@@ -1,12 +1,12 @@
-from sqlalchemy import Column, DateTime, Uuid, Boolean
-from sqlalchemy.sql import func
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, DateTime
+from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from app.database.session import Base
+import datetime
 
-class BaseModel(Base):
-    __abstract__ = True
+class Base:
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
-    id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
-    is_demo = Column(Boolean, default=False, nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+Base = declarative_base(cls=Base)
