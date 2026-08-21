@@ -6,6 +6,7 @@ import { MobileBottomNav } from "./components/layout/MobileBottomNav";
 import { AIConciergeDrawer } from "./components/shared/AIConciergeDrawer";
 import { VRViewerModal } from "./components/shared/VRViewerModal";
 import { OfflineGuardian } from "./components/shared/OfflineGuardian";
+import { DealScopeDrawer } from "./components/shared/DealScopeDrawer";
 
 // Feature modules
 import { HomeView } from "./features/home/HomeView";
@@ -132,6 +133,9 @@ export function App() {
 
         {/* Offline Guardian PWA Monitor */}
         <OfflineGuardian />
+
+        {/* Global DealScope Comparison Drawer */}
+        <DealScopeDrawer />
 
         {/* Global Bottom Trust & Navigation Footer (Hidden on mobile bottom nav if wanted, or padded) */}
         {currentModule !== "agent" && <Footer />}

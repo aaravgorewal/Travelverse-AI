@@ -22,3 +22,4 @@ View your app in AI Studio: https://ai.studio/apps/6c7dadad-873d-4a96-9429-dcb52
 3. Run the app:
    `npm run dev`
 >>>>>>> aaa3294 (Initial commit - TravelVerse AI)
+# TravelVerseAI

@@ -156,6 +156,7 @@ const AgentDashboard: React.FC = () => {
 };
 
 import { AgentCopilot } from "./components/AgentCopilot";
+import { SmartBundleBuilder } from "./components/SmartBundleBuilder";
 
 const AgentAlerts = () => (
   <Card className="p-8 text-center text-slate-500 h-full flex flex-col items-center justify-center">
@@ -204,6 +205,7 @@ export const AgentPortalView: React.FC = () => {
     { name: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { name: "Copilot", icon: <Sparkles className="w-4 h-4" /> },
     { name: "Customers", icon: <Users className="w-4 h-4" /> },
+    { name: "SmartBundle", icon: <Package className="w-4 h-4 text-indigo-400" /> },
     { name: "Flights", icon: <Plane className="w-4 h-4" /> },
     { name: "Hotels", icon: <Building2 className="w-4 h-4" /> },
     { name: "Packages", icon: <Package className="w-4 h-4" /> },
@@ -216,6 +218,7 @@ export const AgentPortalView: React.FC = () => {
     switch (activeTab) {
       case "Dashboard": return <AgentDashboard />;
       case "Copilot": return <AgentCopilot />;
+      case "SmartBundle": return <SmartBundleBuilder />;
       case "Customers": return <div className="text-sm"><CustomersView /></div>;
       case "Flights": return <div className="text-sm"><FlightsView /></div>;
       case "Hotels": return <div className="text-sm"><HotelsView /></div>;

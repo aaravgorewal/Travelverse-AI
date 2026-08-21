@@ -4,6 +4,7 @@ import { aiService } from "../../../services";
 import { TripPlan } from "../../../types";
 import { Button, Card, Badge, Input } from "../../../components/ui";
 import { formatCurrency } from "../../../lib/utils";
+import { useUIStore } from "../../../stores/useUIStore";
 
 export const AgentCopilot: React.FC = () => {
   const [prompt, setPrompt] = useState("Create a 5-day Dubai package for a family of 4 under ₹2 lakh.");
@@ -249,7 +250,7 @@ export const AgentCopilot: React.FC = () => {
               <Button variant="outline" className="w-full justify-start">
                 <RefreshCw className="w-4 h-4 mr-2" /> Modify Preferences
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => useUIStore.getState().openDealScope()}>
                 <Sparkles className="w-4 h-4 mr-2" /> Compare Alternatives
               </Button>
             </div>
