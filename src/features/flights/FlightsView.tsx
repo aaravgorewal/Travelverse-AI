@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTravelStore } from "../../stores/useTravelStore";
+import { useTravelAI } from "../../hooks/useTravelAI";
 import { useUIStore } from "../../stores/useUIStore";
 import { FlightOffer, FlightSearchParams } from "../../types";
 import { searchFlights, SEED_COMPREHENSIVE_FLIGHTS } from "./flightData";
@@ -12,6 +13,11 @@ type FlightSubView = "search" | "results" | "details";
 export const FlightsView: React.FC = () => {
   const { currency, setSelectedFlight, setCheckoutItem } = useTravelStore();
   const { setModule, openAIWithPrompt } = useUIStore();
+  const { explain, actionStates, retry } = useTravelAI({
+    onSuccess: (action, data) => {
+      openAIWithPrompt(data.message || "AI Analysis Complete");
+    }
+  });
 
   const [subView, setSubView] = useState<FlightSubView>("search");
   const [selectedFlightDetail, setSelectedFlightDetail] = useState<FlightOffer | null>(null);
@@ -169,24 +175,29 @@ export const FlightsView: React.FC = () => {
   };
 
   // Ask AI Concierge with deep contextual prompt
-  const handleAskAI = (flight: FlightOffer) => {
-    const prompt = `I am reviewing this flight option on TravelVerse:
-- Airline: ${flight.airline} (${flight.flightNumber || flight.airlineCode})
-- Route: ${flight.originCity} (${flight.originCode}) to ${flight.destinationCity} (${flight.destinationCode})
-- Cabin Class: ${flight.cabinClass}
-- Total Price: $${flight.price} (${flight.currency})
-- Duration: ${flight.totalDuration}, Stops: ${flight.stops === 0 ? "Non-stop" : `${flight.stops} Stop (${flight.layoverDetails || ""})`}
-- AI Tag: ${flight.aiBadge || "Standard Match"} (${flight.aiBadgeReason || ""})
-- Baggage: ${flight.baggageIncluded ? "Checked bag included" : "Carry-on only"}
-- Eco Score: Grade ${flight.ecoScore} (${flight.carbonEmissionKg} kg CO2)
-- On-Time Performance: ${flight.onTimeRate || 88}%
-
-Please provide an expert flight analysis:
-1. Is this price and cabin quality a great value for this route?
-2. What are the pros & cons regarding the aircraft type, baggage allowance, and layover?
-3. Any smart tips for seat selection or maximizing miles/comfort?`;
-
-    openAIWithPrompt(prompt);
+  const handleAskAI = async (flight: FlightOffer) => {
+    try {
+      const flightDetails = {
+        airline: flight.airline,
+        flightNumber: flight.flightNumber || flight.airlineCode,
+        route: `${flight.originCity} to ${flight.destinationCity}`,
+        cabinClass: flight.cabinClass,
+        price: flight.price,
+        currency: flight.currency,
+        duration: flight.totalDuration,
+        stops: flight.stops
+      };
+      
+      await explain({
+        item_id: flight.id,
+        item_type: "flight",
+        context: flightDetails,
+        query: "Provide an expert flight analysis: Is this a good value? What are the pros & cons? Any smart tips?"
+      });
+    } catch (e) {
+      // Error is handled by actionStates, can trigger a retry UI
+      console.error(e);
+    }
   };
 
   // Render sub-page views
