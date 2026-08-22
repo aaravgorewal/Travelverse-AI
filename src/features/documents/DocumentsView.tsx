@@ -153,7 +153,7 @@ export const DocumentsView: React.FC = () => {
   return (
     <div className="space-y-8 pb-16">
       {/* Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 sm:p-10 shadow-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-8 sm:p-10 shadow-sm border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
             <Badge variant="purple">Secure Document Vault</Badge>
@@ -318,7 +318,7 @@ export const DocumentsView: React.FC = () => {
           size="sm"
         >
           <div className="flex flex-col items-center justify-center p-6 space-y-4 text-center">
-            <div className="p-4 rounded-2xl bg-white shadow-xl border border-slate-200">
+            <div className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200">
               <div className="w-48 h-48 bg-slate-900 rounded-xl flex items-center justify-center text-white text-xs font-mono p-4">
                 [SECURE BIOMETRIC QR]
               </div>

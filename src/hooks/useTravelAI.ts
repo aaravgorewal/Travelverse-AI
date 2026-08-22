@@ -239,7 +239,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 1. Chat
   const chat = useCallback(
     (params: AIChatRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("chat", (p, opt) => aiService.chat(p, opt), params, options);
+      return executeAction("chat", (p) => aiService.chat(p), params, options);
     },
     [executeAction]
   );
@@ -265,7 +265,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
         chat: { ...prev.chat, loading: true, success: false, error: null }
       }));
 
-      await aiService.streamChat(params, {
+      await aiService.streamChat(params as any, {
         onStatus: (msg) => setStreamStatus(msg),
         onToken: (t) => setStreamText(prev => prev + t),
         onWarning: (msg) => console.warn("Stream Warning:", msg),
@@ -296,7 +296,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 2. Plan Trip
   const planTrip = useCallback(
     (params: any, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("planTrip", (p, opt) => aiService.planTrip(p, opt), params, options);
+      return executeAction("planTrip", (p) => aiService.planTrip(p), params, options);
     },
     [executeAction]
   );
@@ -304,7 +304,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 3. Recommend
   const recommend = useCallback(
     (params: RecommendRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("recommend", (p, opt) => aiService.recommend(p, opt), params, options);
+      return executeAction("recommend", (p) => aiService.recommend(p), params, options);
     },
     [executeAction]
   );
@@ -312,7 +312,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 4. Explain
   const explain = useCallback(
     (params: ExplainRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("explain", (p, opt) => aiService.explain(p, opt), params, options);
+      return executeAction("explain", (p) => aiService.explain(p), params, options);
     },
     [executeAction]
   );
@@ -320,7 +320,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 5. Optimize
   const optimize = useCallback(
     (params: OptimizeItineraryRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("optimize", (p, opt) => aiService.optimizeItinerary(p, opt), params, options);
+      return executeAction("optimize", (p) => aiService.optimizeItinerary(p), params, options);
     },
     [executeAction]
   );
@@ -328,7 +328,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 6. Reduce Cost
   const reduceCost = useCallback(
     (params: OptimizeBudgetRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("reduceCost", (p, opt) => aiService.optimizeBudget(p, opt), params, options);
+      return executeAction("reduceCost", (p) => aiService.optimizeBudget(p), params, options);
     },
     [executeAction]
   );
@@ -336,7 +336,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 7. Personalize
   const personalize = useCallback(
     (params: PersonalizeRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("personalize", (p, opt) => aiService.personalize(p, opt), params, options);
+      return executeAction("personalize", (p) => aiService.personalize(p), params, options);
     },
     [executeAction]
   );
@@ -344,7 +344,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 8. Packing List
   const packingList = useCallback(
     (params: PackingListRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("packingList", (p, opt) => aiService.packingList(p, opt), params, options);
+      return executeAction("packingList", (p) => aiService.packingList(p), params, options);
     },
     [executeAction]
   );
@@ -352,7 +352,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 9. Support
   const support = useCallback(
     (params: SupportRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("support", (p, opt) => aiService.support(p, opt), params, options);
+      return executeAction("support", (p) => aiService.support(p), params, options);
     },
     [executeAction]
   );
@@ -360,7 +360,7 @@ export function useTravelAI(hookOptions: UseTravelAIOptions = {}) {
   // 10. Compare
   const compare = useCallback(
     (params: CompareRequest, options?: AIRequestOptions): Promise<any> => {
-      return executeAction("compare", (p, opt) => aiService.compare(p, opt), params, options);
+      return executeAction("compare", (p) => aiService.compare(p), params, options);
     },
     [executeAction]
   );

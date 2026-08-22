@@ -49,10 +49,8 @@ export const SupportView: React.FC = () => {
 
     try {
       const res = await aiAPI.support({
+        query: issueDesc,
         booking_id: issueTopic,
-        issueDescription: issueDesc,
-        userLocation: activeTrip?.destination || "Unknown Location",
-        urgency: "high"
       });
       setAiResponse(res);
     } catch (err: any) {

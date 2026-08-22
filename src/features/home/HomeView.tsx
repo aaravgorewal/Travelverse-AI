@@ -1,1379 +1,599 @@
-import React, { useState, useEffect } from "react";
-import {
-  Plane,
-  Building,
-  Compass,
-  Sparkles,
-  Glasses,
-  MapPin,
-  Calendar,
-  Users,
-  Search,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  Globe,
-  Star,
-  ChevronRight,
-  CheckCircle2,
-  SlidersHorizontal,
-  Clock,
-  AlertTriangle,
-  PhoneCall,
-  Bot,
-  Send,
-  RefreshCw,
-  Luggage,
-  BedDouble,
-  Navigation,
-  FileText,
-  Ticket,
-  ExternalLink,
-  Info,
-} from "lucide-react";
+<div
+  style={{
+    position: "fixed",
+    top: 100,
+    left: 20,
+    zIndex: 99999,
+    background: "red",
+    color: "white",
+    padding: "20px",
+    fontSize: "24px",
+    fontWeight: "bold",
+  }}
+>
+  CURRENT HOMEVIEW TEST 987
+</div>
+import React from "react";
+import { ArrowRight, Sparkles, Navigation, Activity, CheckCircle2, ChevronRight, MapPin, Calendar, Bot, SlidersHorizontal, Compass } from "lucide-react";
 import { useUIStore } from "../../stores/useUIStore";
-import { useTravelStore } from "../../stores/useTravelStore";
-import { useAuthStore } from "../../stores/useAuthStore";
-import {
-  SEED_PACKAGES,
-  SEED_HOTELS,
-  SEED_FLIGHTS,
-  SEED_VR_SCENES,
-  SEED_EXPERIENCES,
-  SEED_TRIPS,
-} from "../../config/constants";
-import {
-  Button,
-  Card,
-  Badge,
-  Skeleton,
-  SkeletonTripCard,
-  SkeletonDestinationCard,
-  SkeletonExperienceCard,
-} from "../../components/ui";
-import { formatCurrency } from "../../lib/utils";
-import { apiClient } from "../../services/apiClient";
-import { aiAPI } from "../../lib/api/ai";
-import { useToast } from "../../components/ui/Toast";
-import { useSEO } from "../../hooks/useSEO";
+import { Button } from "../../components/ui";
+import { PageHeader, DataList, DataListItem, StatusBadge, AIActionButton } from "../../components/ui/SaaSCore";
 
 export const HomeView: React.FC = () => {
-  useSEO({
-    title: "TravelVerse AI - Autonomous Travel OS",
-    description: "Discover, plan, and book optimized flight, hotel, and spatial VR travel itineraries with AI.",
-    path: "/"
-  });
-
-  const { setModule, openVR, toggleAIConcierge } = useUIStore();
-  const { currency, setSelectedPackage, setSelectedHotel, setSelectedFlight, setSelectedExperience, setCheckoutItem } =
-    useTravelStore();
-  const { user } = useAuthStore();
-  const { showToast } = useToast();
-
-  const userStyles = user?.travelStyles || (user?.travelPreferences?.travelStyle as string[]) || ["Luxury", "Culture"];
-  const userCity = user?.homeCity || "San Francisco, USA";
-  const userDestinations = user?.favoriteDestinations || ["Tokyo, Japan", "Amalfi Coast, Italy"];
-  const userBudget = user?.budgetPreference || "Luxury";
-
-  // Search & AI Hero State
-  const [searchTab, setSearchTab] = useState<"flights" | "hotels" | "packages" | "experiences">("flights");
-  const [aiPromptInput, setAiPromptInput] = useState("");
-  const [originInput, setOriginInput] = useState(userCity);
-  const [destinationInput, setDestinationInput] = useState("Tokyo, Japan");
-  const [datesInput, setDatesInput] = useState("Sep 12 - Sep 19, 2026");
-  const [travelersInput, setTravelersInput] = useState("2 Travelers");
-
-  // Dynamic Data & Loading State
-  const [isLoading, setIsLoading] = useState(true);
-  const [overviewData, setOverviewData] = useState<any>(null);
-  const [destinationFilter, setDestinationFilter] = useState("All");
-
-  // Copilot Live State
-  const [copilotQuery, setCopilotQuery] = useState("");
-  const [copilotLoading, setCopilotLoading] = useState(false);
-  const [copilotResponse, setCopilotResponse] = useState<any>(null);
-
-  // Fetch real API data for overview
-  useEffect(() => {
-    let isMounted = true;
-    const fetchHomeData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await apiClient.get("/v1/home/overview");
-        if (isMounted && data) {
-          setOverviewData(data);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch /api/v1/home/overview, falling back to seed data:", err);
-      } finally {
-        if (isMounted) {
-          // Slight delay for smooth UX transition
-          setTimeout(() => setIsLoading(false), 300);
-        }
-      }
-    };
-
-    fetchHomeData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Handle Hero Search Submission
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const dest = destinationInput.replace(/,.*/, "").trim();
-    const orig = originInput.replace(/,.*/, "").trim();
-    const params = new URLSearchParams();
-    if (searchTab) params.set("category", searchTab);
-    if (dest) params.set("destination", dest);
-    if (orig && searchTab === "flights") params.set("origin", orig);
-    window.history.pushState(null, "", `/search?${params.toString()}`);
-    setModule("search");
-  };
-
-  // Handle Plan With AI button
-  const handlePlanWithAI = (customPrompt?: string) => {
-    const promptToUse = customPrompt || aiPromptInput || "Plan a 5-day Dubai trip for my family under ₹2 lakh.";
-    setModule("ai");
-  };
-
-  // Handle Agent Copilot Quick Query — uses real AI chat endpoint
-  const handleCopilotSubmit = async (e?: React.FormEvent, customQuery?: string) => {
-    if (e) e.preventDefault();
-    const query = customQuery || copilotQuery;
-    if (!query.trim()) return;
-
-    setCopilotLoading(true);
-    try {
-      const res = await aiAPI.chat({
-          context: { user_id: "1", role: "traveler" },
-        message: query,
-        // conversationHistory: [],
-        agentPersona: "TravelVerse Copilot",
-      });
-      setCopilotResponse({
-        headline: res.message?.split(".")[0] || "Travel Plan Calibrated",
-        analysis: res.message,
-        estimatedBudget: null,
-        suggestedPrompts: res.data?.suggestedPrompts || [] || [],
-      });
-    } catch (err: any) {
-      showToast({ title: "Copilot Unavailable", message: err.message || "AI assistant is currently unavailable.", type: "error" });
-      setCopilotResponse(null);
-    } finally {
-      setCopilotLoading(false);
-    }
-  };
-
-  // Data sources (API data prioritized, fallback to constants)
-  const upcomingTrip = overviewData?.upcomingTrip || {
-    id: "trip-01",
-    title: "Autumn Serenade in Kyoto & Tokyo",
-    destination: "Tokyo & Kyoto",
-    country: "Japan",
-    coverImage: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80",
-    startDate: "2026-09-12",
-    endDate: "2026-09-19",
-    daysUntil: 22,
-    status: "Confirmed & Ticketed",
-    flightNumber: "QA 782 (Quantum Business SkySuite)",
-    hotelName: "Aman Tokyo & Suiran Kyoto",
-    departureGate: "Gate B14 • Terminal 1",
-    boardingTime: "07:45 AM",
-    pnrCode: "TV-89241X",
-    travelersCount: 2,
-    weatherForecast: { temp: 24, condition: "Clear & Crisp", icon: "☀️", advisory: "Optimal autumn foliage viewing" },
-    progressPercent: 100,
-    carbonOffsetKg: 420,
-  };
-
-  const aiRecommendations = overviewData?.aiRecommendations || [
-    {
-      id: "rec-1",
-      badge: "AI Style Match • 99%",
-      title: "Kyoto Twilight Zen & Michelin Kaiseki",
-      category: "Cultural & Luxury",
-      destination: "Kyoto, Japan",
-      duration: "6 Days",
-      estimatedCost: "$3,850",
-      rating: 4.98,
-      imageUrl: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
-      aiRationale: "Selected based on your Pescatarian dining preference and passion for sacred architecture.",
-      tags: ["Tea Ceremony", "Private Ryokan", "Gran Class Rail"],
-    },
-    {
-      id: "rec-2",
-      badge: "Trending Autonomous Deal",
-      title: "Dubai Desert Oasis & Sky Lounge Helicopter Tour",
-      category: "Luxury & Adventure",
-      destination: "Dubai, UAE",
-      duration: "5 Days",
-      estimatedCost: "$2,400 (₹1.98 Lakh)",
-      rating: 4.96,
-      imageUrl: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-      aiRationale: "Matches your ₹2 lakh family budget target with private Bedouin falconry & Burj Khalifa access.",
-      tags: ["Platinum Falconry", "Burj Al Arab", "Helicopter Transfer"],
-    },
-    {
-      id: "rec-3",
-      badge: "Wellness Sanctuary",
-      title: "Amalfi Coast Yacht & Ravello Lemon Estate",
-      category: "Wellness & Romance",
-      destination: "Amalfi Coast, Italy",
-      duration: "7 Days",
-      estimatedCost: "$4,200",
-      rating: 4.99,
-      imageUrl: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
-      aiRationale: "Calibrated for step-free private boat transfers and panoramic cliffside relaxation.",
-      tags: ["Private Riva Boat", "Cliffside Pool", "Organic Vineyard"],
-    },
-  ];
-
-  const popularDestinations = overviewData?.popularDestinations || [
-    {
-      id: "dest-1",
-      name: "Tokyo & Kyoto",
-      country: "Japan",
-      region: "East Asia",
-      tagline: "Neon hyper-cities, ancient torii gates & culinary masters",
-      rating: 4.97,
-      temperature: "24°C",
-      weather: "Sunny",
-      startingPrice: 1240,
-      currency: "USD",
-      safetyLevel: "Level 1 (Highest Safety)",
-      imageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Culture", "Gastronomy", "Transit Hub"],
-    },
-    {
-      id: "dest-2",
-      name: "Dubai",
-      country: "United Arab Emirates",
-      region: "Middle East",
-      tagline: "Futuristic skyscrapers, golden dunes & luxury hospitality",
-      rating: 4.95,
-      temperature: "31°C",
-      weather: "Clear Skies",
-      startingPrice: 890,
-      currency: "USD",
-      safetyLevel: "Level 1 (Highest Safety)",
-      imageUrl: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Family", "Luxury", "Shopping"],
-    },
-    {
-      id: "dest-3",
-      name: "Paris",
-      country: "France",
-      region: "Western Europe",
-      tagline: "Haute couture, Louvre masterpieces & Seine romantic bistros",
-      rating: 4.92,
-      temperature: "21°C",
-      weather: "Mild",
-      startingPrice: 950,
-      currency: "USD",
-      safetyLevel: "Level 1 (Exercise Normal Precautions)",
-      imageUrl: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Art", "Romantic", "Architecture"],
-    },
-    {
-      id: "dest-4",
-      name: "Maldives Islands",
-      country: "Maldives",
-      region: "Indian Ocean",
-      tagline: "Pristine overwater bungalows, bioluminescent bays & coral reefs",
-      rating: 4.99,
-      temperature: "29°C",
-      weather: "Tropical Breeze",
-      startingPrice: 1850,
-      currency: "USD",
-      safetyLevel: "Level 1 (Highest Safety)",
-      imageUrl: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Honeymoon", "Diving", "Spa"],
-    },
-    {
-      id: "dest-5",
-      name: "Swiss Alps & Zermatt",
-      country: "Switzerland",
-      region: "Central Europe",
-      tagline: "Panoramic Glacier Express, Matterhorn peaks & thermal spas",
-      rating: 4.96,
-      temperature: "16°C",
-      weather: "Crisp Alpine",
-      startingPrice: 1450,
-      currency: "USD",
-      safetyLevel: "Level 1 (Highest Safety)",
-      imageUrl: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Adventure", "Scenic Rail", "Ski"],
-    },
-    {
-      id: "dest-6",
-      name: "Amalfi Coast",
-      country: "Italy",
-      region: "Southern Europe",
-      tagline: "Pastel cliffside villages, Capri blue grottos & lemon groves",
-      rating: 4.98,
-      temperature: "26°C",
-      weather: "Sunny Coastal",
-      startingPrice: 1320,
-      currency: "USD",
-      safetyLevel: "Level 1 (Exercise Normal Precautions)",
-      imageUrl: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
-      vrAvailable: true,
-      tags: ["Luxury", "Yachting", "Seafood"],
-    },
-  ];
-
-  const filteredDestinations = popularDestinations.filter((d: any) => {
-    if (destinationFilter === "All") return true;
-    if (destinationFilter === "Asia") return d.region.includes("Asia");
-    if (destinationFilter === "Middle East") return d.region.includes("Middle East");
-    if (destinationFilter === "Europe") return d.region.includes("Europe");
-    if (destinationFilter === "Tropical") return d.region.includes("Ocean") || d.tags.includes("Diving");
-    return true;
-  });
-
-  const vrPortals = overviewData?.vrPortals || [
-    {
-      id: "vr-1",
-      title: "Maldives Coral Lagoon Overwater Retreat",
-      location: "Noonu Atoll, Maldives",
-      type: "360° Overwater Villa",
-      hotspotsCount: 3,
-      thumbnailUrl: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
-      badge: "4K Spatial Audio",
-    },
-    {
-      id: "vr-2",
-      title: "Tokyo Shibuya Sky at Twilight",
-      location: "Tokyo, Japan",
-      type: "360° Rooftop Panorama",
-      hotspotsCount: 4,
-      thumbnailUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
-      badge: "Mount Fuji Horizon",
-    },
-    {
-      id: "vr-3",
-      title: "Swiss Alps Glacier Express Panorama Car",
-      location: "Andermatt, Switzerland",
-      type: "360° Alpine Train",
-      hotspotsCount: 3,
-      thumbnailUrl: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80",
-      badge: "Glass-Dome Vista",
-    },
-  ];
-
-  const trendingExperiences = overviewData?.trendingExperiences || [
-    {
-      id: "exp-1",
-      title: "Dubai Platinum Desert Falconry & Royal Dune Dinner",
-      category: "VIP Safari",
-      city: "Dubai",
-      country: "UAE",
-      duration: "6.5 hours",
-      price: 240,
-      currency: "USD",
-      rating: 4.98,
-      reviewsCount: 1840,
-      imageUrl: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-      instantConfirmation: true,
-      badge: "Top Seller",
-    },
-    {
-      id: "exp-2",
-      title: "Tokyo Cyber-Night Izakaya Odyssey & Secret Bars",
-      category: "Culinary & Nightlife",
-      city: "Tokyo",
-      country: "Japan",
-      duration: "4.5 hours",
-      price: 135,
-      currency: "USD",
-      rating: 4.97,
-      reviewsCount: 1680,
-      imageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
-      instantConfirmation: true,
-      badge: "Michelin Insider",
-    },
-    {
-      id: "exp-3",
-      title: "Santorini Sunset Catamaran Cruise with Greek Feast",
-      category: "Yacht & Sailing",
-      city: "Santorini",
-      country: "Greece",
-      duration: "5 hours",
-      price: 175,
-      currency: "USD",
-      rating: 4.96,
-      reviewsCount: 2240,
-      imageUrl: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
-      instantConfirmation: true,
-      badge: "Best Sunset View",
-    },
-    {
-      id: "exp-4",
-      title: "Reykjavik Aurora Borealis Hunt by 4x4 Superjeep",
-      category: "Adventure & Astro",
-      city: "Reykjavik",
-      country: "Iceland",
-      duration: "4 hours",
-      price: 195,
-      currency: "USD",
-      rating: 4.94,
-      reviewsCount: 980,
-      imageUrl: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80",
-      instantConfirmation: true,
-      badge: "Free Re-Hunt Guarantee",
-    },
-  ];
-
-  const travelSafety = overviewData?.travelSafety || {
-    globalStatus: "Active & Monitored 24/7",
-    activeAdvisoriesCount: 0,
-    emergencyPhone: "+1 800 555 0199",
-    sosStatus: "Instant Response Online",
-    advisories: [
-      {
-        id: "saf-1",
-        country: "Japan (Tokyo, Kyoto, Osaka)",
-        level: "Level 1: Exercise Normal Precautions",
-        statusColor: "emerald",
-        entryRequirements: "eVisa / Visit Japan Web QR Code • 6-Month Passport Validity",
-        healthStatus: "No quarantine or vaccination mandates required.",
-        lastVerified: "Updated 10 mins ago via IATA & WHO feed",
-      },
-      {
-        id: "saf-2",
-        country: "United Arab Emirates (Dubai, Abu Dhabi)",
-        level: "Level 1: Exercise Normal Precautions",
-        statusColor: "emerald",
-        entryRequirements: "30-day tourist visa on arrival for 70+ nations • Travel Insurance Recommended",
-        healthStatus: "World-class healthcare coverage & medical concierge active.",
-        lastVerified: "Updated 15 mins ago",
-      },
-      {
-        id: "saf-3",
-        country: "Schengen Zone (France, Italy, Switzerland)",
-        level: "Level 1: Exercise Normal Precautions",
-        statusColor: "emerald",
-        entryRequirements: "ETIAS pre-clearance ready • Valid travel medical insurance ($30k+ coverage)",
-        healthStatus: "Universal emergency medical standard verified.",
-        lastVerified: "Updated 25 mins ago",
-      },
-    ],
-    features: [
-      { title: "24/7 Global SOS Dispatch", desc: "One-tap emergency medical evacuation and embassy concierge." },
-      { title: "Autonomous Flight Delay Shield", desc: "Instant lounge passes and automatic re-routing on delays over 60 mins." },
-      { title: "Biometric Wallet Encryption", desc: "Passports and boarding passes protected by multi-signature sovereign encryption." },
-    ],
-  };
+  const { setModule } = useUIStore();
 
   return (
-    <div id="travelverse-home" className="space-y-20 pb-28">
+    <div id="travelverse-home" className="min-h-screen bg-[var(--landing-bg-primary)] pt-24 pb-20 overflow-x-hidden w-full max-w-[100vw]">
+
       {/* 1. HERO SECTION */}
-      <section
-        id="hero-section"
-        className="relative min-h-[640px] lg:min-h-[720px] rounded-3xl overflow-hidden flex items-center justify-center p-6 sm:p-12 lg:p-16 text-white border border-slate-800/80 shadow-2xl"
-      >
-        {/* Ambient Photographic Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=2200&q=85')`,
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/95" />
-          <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90" />
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+        {/* Product Label */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          <span className="landing-label text-indigo-700 dark:text-indigo-300">AI-Powered Travel Planning</span>
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
-          {/* Subtle Live Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 backdrop-blur-md px-5 py-2 border border-blue-400/20 text-xs sm:text-sm font-semibold text-blue-200 shadow-sm">
-            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
-            <span>Autonomous Universe • AI Itineraries • Real-Time Inventory • 360° VR</span>
+        {/* Headline */}
+        <h1 className="landing-display max-w-4xl">
+          The operating system for modern travel management.
+        </h1>
+
+        {/* Supporting Copy */}
+        <p className="landing-body text-lg sm:text-xl max-w-2xl mx-auto">
+          Consolidate itineraries, automate intelligence, and deploy AI copilot workflows
+          to orchestrate complex global travel flawlessly.
+        </p>
+
+        {/* Actions */}
+        <div className="flex flex-col w-full sm:w-auto sm:flex-row items-center gap-4 pt-4">
+          <Button
+            size="lg"
+            onClick={() => setModule('ai')}
+            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-semibold px-8"
+          >
+            Start Planning
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => setModule('search')}
+            className="w-full sm:w-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold px-8"
+          >
+            Explore How It Works
+          </Button>
+        </div>
+
+        {/* Product Visual Mockup */}
+        <div className="w-full mt-16 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md overflow-hidden relative group">
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-50/80 via-transparent to-transparent dark:from-slate-950/80 pointer-events-none z-10" />
+          {/* We use a generated workspace interface image */}
+          <img
+            src="/Users/aaravsaini/.gemini/antigravity-ide/brain/42b30b6d-b3d4-435f-af59-67fe27c5c7df/travelverse_app_workspace_1787362371343.jpg"
+            alt="TravelVerse Workspace Interface Preview"
+            className="w-full object-cover object-top h-[600px] border-b border-slate-200 dark:border-slate-800 opacity-95 transition-opacity group-hover:opacity-100"
+          />
+        </div>
+
+      </section>
+
+      {/* 1.5 VALUE STRIP */}
+      <section className="border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-20">
+        <div className="max-w-[1200px] mx-auto px-6 py-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 md:justify-between text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-semibold">AI Trip Planning</span>
           </div>
-
-          {/* Exact Hero Title */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08]">
-            Your Journey. <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-teal-300 bg-clip-text text-transparent">Intelligently Connected.</span>
-          </h1>
-
-          {/* AI Travel Input Box */}
-          <div className="max-w-3xl mx-auto space-y-3">
-            <div className="relative flex items-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-2 shadow-2xl focus-within:border-blue-400 transition-all">
-              <Sparkles className="w-6 h-6 ml-3 text-amber-300 shrink-0" />
-              <input
-                id="ai-travel-input"
-                type="text"
-                value={aiPromptInput}
-                onChange={(e) => setAiPromptInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handlePlanWithAI();
-                }}
-                placeholder="Tell TRAVELVERSE where you want to go..."
-                className="w-full bg-transparent px-4 py-3 text-base sm:text-lg text-white placeholder-slate-300 focus:outline-none font-medium"
-              />
-              <Button
-                id="btn-plan-with-ai-hero"
-                size="md"
-                onClick={() => handlePlanWithAI()}
-                className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-md text-sm sm:text-base font-bold px-6 py-3"
-              >
-                <Sparkles className="w-4 h-4 mr-2" /> Plan with AI
-              </Button>
-            </div>
-
-            {/* Example Prompt Pill */}
-            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-300">
-              <span className="text-slate-400 font-medium">Example:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAiPromptInput("Plan a 5-day Dubai trip for my family under ₹2 lakh.");
-                }}
-                className="text-blue-300 hover:text-white underline decoration-blue-400/50 underline-offset-2 transition-colors cursor-pointer"
-              >
-                &ldquo;Plan a 5-day Dubai trip for my family under ₹2 lakh.&rdquo;
-              </button>
-            </div>
+          <div className="hidden md:block w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <Navigation className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-semibold">Smart Itineraries</span>
           </div>
-
-          {/* Dedicated Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <Button
-              id="btn-plan-with-ai-main"
-              size="lg"
-              onClick={() => handlePlanWithAI()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/30 px-8 py-4 text-base sm:text-lg"
-            >
-              <Sparkles className="w-5 h-5 mr-2 text-amber-300" /> Plan with AI
-            </Button>
-            <Button
-              id="btn-explore-vr-main"
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                openVR(SEED_VR_SCENES[0]);
-              }}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md rounded-2xl px-8 py-4 text-base sm:text-lg font-semibold"
-            >
-              <Glasses className="w-5 h-5 mr-2 text-teal-300" /> Explore VR
-            </Button>
+          <div className="hidden md:block w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-semibold">Destination Intelligence</span>
           </div>
-
-          {/* Unified Search Engine Tabs */}
-          <div className="mt-10 rounded-3xl bg-white/95 dark:bg-slate-900/95 p-4 sm:p-6 lg:p-8 text-slate-900 dark:text-white shadow-2xl backdrop-blur-xl border border-white/20 max-w-5xl mx-auto text-left">
-            {/* Search Tabs: Flights, Hotels, Packages, Experiences */}
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-              {[
-                { id: "flights", label: "Flights", icon: <Plane className="w-4 h-4" /> },
-                { id: "hotels", label: "Hotels", icon: <Building className="w-4 h-4" /> },
-                { id: "packages", label: "Packages", icon: <MapPin className="w-4 h-4" /> },
-                { id: "experiences", label: "Experiences", icon: <Compass className="w-4 h-4" /> },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  id={`tab-${tab.id}`}
-                  onClick={() => setSearchTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                    searchTab === tab.id
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  {tab.icon}
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Form Inputs Grid */}
-            <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Navigation className="w-3 h-3 text-blue-500" /> Origin
-                </label>
-                <input
-                  type="text"
-                  value={originInput}
-                  onChange={(e) => setOriginInput(e.target.value)}
-                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
-                  placeholder="City / Airport"
-                />
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <MapPin className="w-3 h-3 text-indigo-500" /> Destination
-                </label>
-                <input
-                  type="text"
-                  value={destinationInput}
-                  onChange={(e) => setDestinationInput(e.target.value)}
-                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
-                  placeholder="Where to?"
-                />
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3 text-teal-500" /> Dates
-                </label>
-                <input
-                  type="text"
-                  value={datesInput}
-                  onChange={(e) => setDatesInput(e.target.value)}
-                  className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
-                  placeholder="Select dates"
-                />
-              </div>
-
-              <div className="flex gap-2.5">
-                <div className="flex-1 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Users className="w-3 h-3 text-amber-500" /> Travelers
-                  </label>
-                  <input
-                    type="text"
-                    value={travelersInput}
-                    onChange={(e) => setTravelersInput(e.target.value)}
-                    className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white focus:outline-none"
-                  />
-                </div>
-
-                <Button
-                  id="btn-execute-search"
-                  type="submit"
-                  size="lg"
-                  className="h-full px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
-                >
-                  <Search className="w-5 h-5" />
-                </Button>
-              </div>
-            </form>
+          <div className="hidden md:block w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-semibold">Travel Safety Insights</span>
           </div>
         </div>
       </section>
 
-      {/* 2. UPCOMING TRIP SECTION */}
-      <section id="section-upcoming-trip" className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="success" size="md">Confirmed & Ticketed</Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-blue-500" /> Departure in {upcomingTrip.daysUntil} Days
-              </span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Upcoming Trip
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              id="btn-view-itinerary"
-              variant="outline"
-              size="md"
-              onClick={() => setModule("trips")}
-              className="text-sm font-semibold"
-            >
-              <Navigation className="w-4 h-4 mr-2" /> Full Itinerary
-            </Button>
-            <Button
-              id="btn-view-boarding-pass"
-              size="md"
-              onClick={() => setModule("documents")}
-              className="text-sm font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900"
-            >
-              <Ticket className="w-4 h-4 mr-2" /> Live Boarding Pass
-            </Button>
-          </div>
+      {/* 2. PRODUCT DEMONSTRATION SECTION */}
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 mt-20 sm:mt-24">
+        <div className="text-center space-y-4 mb-16">
+          <h2 className="landing-h2">A complete operating system for travel.</h2>
+          <p className="landing-body text-lg max-w-2xl mx-auto">
+            TravelVerse replaces fragmented booking tools with a single, highly-dense workspace.
+            Manage itineraries, monitor travel intelligence, and leverage our autonomous AI planner.
+          </p>
         </div>
 
-        {isLoading ? (
-          <SkeletonTripCard />
-        ) : (
-          <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-8 sm:p-10 lg:p-12 border border-indigo-900/40 shadow-2xl overflow-hidden relative">
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1/3 opacity-20 bg-cover bg-center hidden md:block"
-              style={{ backgroundImage: `url('${upcomingTrip.coverImage}')` }}
+        {/* The Product UI Preview Container */}
+        <div className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-md overflow-hidden relative">
+
+          {/* Subtle Browser/Window Framing */}
+          <div className="h-10 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="ml-4 h-6 flex-1 max-w-sm bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center px-2">
+              <span className="text-[10px] text-slate-400 font-mono">travelverse.ai/workspace/tokyo-q4</span>
+            </div>
+          </div>
+
+          {/* Real Component Composition (Mocking the Workspace) */}
+          <div className="p-6 md:p-10 space-y-8 bg-white dark:bg-slate-950">
+
+            <PageHeader
+              title="Q4 Executive Summit (Tokyo)"
+              description="Managing active itineraries and travel intelligence."
+              action={
+                <StatusBadge status="success">Active Trip</StatusBadge>
+              }
             />
-            <div className="relative z-10 space-y-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6">
-                <div>
-                  <span className="text-xs sm:text-sm font-bold text-indigo-300 uppercase tracking-widest">
-                    PNR: {upcomingTrip.pnrCode} • 2 Travelers
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mt-1">{upcomingTrip.title}</h3>
-                  <p className="text-sm sm:text-base text-slate-300 flex items-center gap-3 mt-2">
-                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-teal-400" /> {upcomingTrip.destination}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-400" /> {upcomingTrip.startDate} to {upcomingTrip.endDate}</span>
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-right">
-                    <span className="text-xs text-slate-400 uppercase font-bold block mb-1">Destination Forecast</span>
-                    <span className="text-base sm:text-lg font-bold text-amber-300 flex items-center gap-1.5 justify-end">
-                      {upcomingTrip.weatherForecast.icon} {upcomingTrip.weatherForecast.temp}°C • {upcomingTrip.weatherForecast.condition}
-                    </span>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+              {/* Central Itinerary List */}
+              <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-slate-500" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Active Itinerary</h3>
                 </div>
+                <DataList className="border-y-0">
+                  <DataListItem
+                    label={<span className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> Day 1: Arrivals & Transfers</span>}
+                    value={<span className="text-sm text-slate-600 dark:text-slate-400">JAL Flight 001 • Narita Express to Hotel</span>}
+                  />
+                  <DataListItem
+                    label={<span className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Day 2: Executive Meetings</span>}
+                    value={<span className="text-sm text-slate-600 dark:text-slate-400">Marunouchi Financial District • 09:00 AM JST</span>}
+                  />
+                  <DataListItem
+                    label={<span className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5" /> Day 3: Client Dinner</span>}
+                    value={<span className="text-sm text-slate-600 dark:text-slate-400">Kyubey Ginza • Reservation Confirmed</span>}
+                  />
+                </DataList>
               </div>
 
-              {/* Flight & Accommodation Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sm text-blue-300 font-bold">
-                    <Plane className="w-4.5 h-4.5" /> Flight Outbound
+              {/* Right Sidebar Intelligence */}
+              <div className="md:col-span-1 space-y-6">
+
+                {/* AI Recommendations */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-indigo-50 dark:bg-indigo-950/20 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider">Copilot Insight</h3>
                   </div>
-                  <p className="text-base sm:text-lg font-extrabold text-white">{upcomingTrip.flightNumber}</p>
-                  <p className="text-xs sm:text-sm text-slate-400">{upcomingTrip.departureGate} • Boarding: {upcomingTrip.boardingTime}</p>
-                </div>
-
-                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sm text-indigo-300 font-bold">
-                    <BedDouble className="w-4.5 h-4.5" /> Accommodation
-                  </div>
-                  <p className="text-base sm:text-lg font-extrabold text-white">{upcomingTrip.hotelName}</p>
-                  <p className="text-xs sm:text-sm text-slate-400">7 Nights • Gran Class Ryokan & 5-Star Suite</p>
-                </div>
-
-                <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sm text-emerald-300 font-bold">
-                    <ShieldCheck className="w-4.5 h-4.5" /> Autonomous Protection
-                  </div>
-                  <p className="text-base sm:text-lg font-extrabold text-white">Delay Shield & SOS Active</p>
-                  <p className="text-xs sm:text-sm text-slate-400">{upcomingTrip.carbonOffsetKg}kg CO₂ Offset 100% Certified</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 3. AI RECOMMENDATIONS SECTION */}
-      <section id="section-ai-recommendations" className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="purple" size="md">
-                <Sparkles className="w-4 h-4 mr-1 text-purple-300" /> TravelDNA™ Tailored
-              </Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">
-                Calibrated to your {userStyles.join(" & ")} preferences
-              </span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              AI Recommendations
-            </h2>
-          </div>
-
-          <Button variant="outline" size="md" onClick={() => setModule("ai")} className="text-sm font-semibold">
-            AI Itinerary Studio <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <SkeletonExperienceCard />
-            <SkeletonExperienceCard />
-            <SkeletonExperienceCard />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {aiRecommendations.map((rec: any) => (
-              <Card key={rec.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
-                <div>
-                  <div className="relative h-60 sm:h-64 w-full overflow-hidden">
-                    <img
-                      src={rec.imageUrl}
-                      alt={rec.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-4 right-4">
-                      <span className="rounded-full bg-black/60 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
-                        ⭐ {rec.rating}
-                      </span>
-                    </div>
-                    <div className="absolute top-4 left-4">
-                      <Badge variant="purple" size="md" className="shadow-lg">
-                        {rec.badge}
-                      </Badge>
-                    </div>
-                    <div className="absolute bottom-4 left-4">
-                      <span className="rounded-xl bg-slate-900/85 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
-                        {rec.duration} • {rec.destination}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white line-clamp-1">{rec.title}</h3>
-                    <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 text-xs sm:text-sm text-purple-900 dark:text-purple-200 leading-relaxed flex items-start gap-2.5">
-                      <Sparkles className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                      <span>{rec.aiRationale}</span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {rec.tags?.map((t: string) => (
-                        <span
-                          key={t}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300"
-                        >
-                          ✦ {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase font-bold">Est. Total</span>
-                    <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">{rec.estimatedCost}</p>
-                  </div>
-
-                  <Button
-                    size="md"
-                    onClick={() => {
-                      setAiPromptInput(`Plan a trip for: ${rec.title}`);
-                      setModule("ai");
-                    }}
-                    className="font-bold text-sm"
-                  >
-                    Generate Trip →
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 4. POPULAR DESTINATIONS SECTION */}
-      <section id="section-popular-destinations" className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="info" size="md">Global Network</Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">Curated & Safety Verified</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Popular Destinations
-            </h2>
-          </div>
-
-          {/* Destination Category Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            {["All", "Asia", "Middle East", "Europe", "Tropical"].map((filter) => (
-              <button
-                key={filter}
-                id={`filter-dest-${filter.toLowerCase()}`}
-                onClick={() => setDestinationFilter(filter)}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                  destinationFilter === filter
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            <SkeletonDestinationCard />
-            <SkeletonDestinationCard />
-            <SkeletonDestinationCard />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {filteredDestinations.map((dest: any) => (
-              <Card key={dest.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
-                <div>
-                  <div className="relative h-56 sm:h-60 w-full overflow-hidden">
-                    <img
-                      src={dest.imageUrl}
-                      alt={dest.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-4 right-4 flex items-center gap-1">
-                      <Badge variant="default" size="sm" className="bg-black/60 text-white backdrop-blur-md border-0 text-xs">
-                        ⭐ {dest.rating}
-                      </Badge>
-                    </div>
-                    {dest.vrAvailable && (
-                      <div className="absolute top-4 left-4">
-                        <span className="rounded-full bg-teal-500/90 text-white text-xs font-bold px-3 py-1 backdrop-blur-md flex items-center gap-1.5 shadow-md">
-                          <Glasses className="w-3.5 h-3.5" /> 360° VR Ready
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-4 left-4">
-                      <span className="rounded-xl bg-slate-900/85 text-white text-xs font-bold px-3 py-1.5 backdrop-blur-md">
-                        {dest.weather} • {dest.temperature}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{dest.name}</h3>
-                      <span className="text-xs sm:text-sm font-semibold text-slate-400">{dest.country}</span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{dest.tagline}</p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {dest.tags?.map((tag: string) => (
-                        <span
-                          key={tag}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">Flights from</span>
-                    <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                      {formatCurrency(dest.startingPrice, currency)}
+                  <div className="p-4 bg-white dark:bg-slate-900">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                      We detected a 45-minute delay on your inbound Narita Express transfer. I have automatically alerted the hotel concierge.
                     </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {dest.vrAvailable && (
-                      <Button
-                        size="md"
-                        variant="outline"
-                        onClick={() => openVR(SEED_VR_SCENES[0])}
-                        className="px-3"
-                        title="Preview in 360° VR"
-                      >
-                        <Glasses className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button
-                      size="md"
-                      onClick={() => {
-                        setDestinationInput(`${dest.name}, ${dest.country}`);
-                        setModule("search");
-                      }}
-                      className="font-bold text-sm"
-                    >
-                      Explore
-                    </Button>
+                    <AIActionButton className="w-full justify-center">Acknowledge</AIActionButton>
                   </div>
                 </div>
-              </Card>
-            ))}
+
+                {/* System Alerts */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-rose-500" />
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">TravelPulse</h3>
+                  </div>
+                  <div className="p-4 bg-white dark:bg-slate-900 flex flex-col items-center text-center">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-white">0</span>
+                    <span className="text-xs text-slate-500">Active Disruptions</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </section>
 
-      {/* 5. EXPLORE IN VR SECTION */}
-      <section id="section-explore-in-vr" className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="purple" size="md">
-                <Glasses className="w-4 h-4 text-indigo-400" /> Spatial Reality Engine
-              </Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">Interactive 360° WebGL Previews</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Explore in VR
-            </h2>
-          </div>
+      {/* 3. WORKFLOW SECTION */}
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 mt-32 border-t border-slate-200 dark:border-slate-800 pt-20">
 
-          <Button
-            id="btn-browse-all-vr"
-            variant="outline"
-            size="md"
-            onClick={() => setModule("vr")}
-            className="text-sm font-semibold"
-          >
-            All VR Portals <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+        <div className="mb-16 max-w-2xl">
+          <h2 className="landing-h2 mb-4">How TravelVerse works.</h2>
+          <p className="landing-body text-lg">
+            A linear progression from intent to execution. We replace traditional search engines
+            with a continuous workflow for managing complex itineraries.
+          </p>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Skeleton className="h-72 rounded-3xl" />
-            <Skeleton className="h-72 rounded-3xl" />
-            <Skeleton className="h-72 rounded-3xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+
+          {/* Step 1 */}
+          <div className="space-y-4">
+            <div className="h-px w-12 bg-indigo-600 dark:bg-indigo-500 mb-6" />
+            <span className="font-mono text-sm font-bold text-slate-400 dark:text-slate-500">01</span>
+            <h3 className="landing-h3">Input your parameters</h3>
+            <p className="landing-body">
+              Specify your destination, dates, and strict budget constraints.
+              Our system instantly queries global inventory and flight routing graphs.
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {vrPortals.map((vr: any, index: number) => (
-              <div
-                key={vr.id}
-                onClick={() => openVR(SEED_VR_SCENES[index] || SEED_VR_SCENES[0])}
-                className="group relative h-80 sm:h-88 rounded-3xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 cursor-pointer"
-              >
-                <img
-                  src={vr.thumbnailUrl}
-                  alt={vr.title}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+
+          {/* Step 2 */}
+          <div className="space-y-4">
+            <div className="h-px w-12 bg-indigo-600 dark:bg-indigo-500 mb-6" />
+            <span className="font-mono text-sm font-bold text-slate-400 dark:text-slate-500">02</span>
+            <h3 className="landing-h3">Let AI build the structure</h3>
+            <p className="landing-body">
+              The Agent Copilot automatically constructs a continuous timeline,
+              booking optimal flights, reserving hotels, and scheduling critical meetings.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="space-y-4">
+            <div className="h-px w-12 bg-indigo-600 dark:bg-indigo-500 mb-6" />
+            <span className="font-mono text-sm font-bold text-slate-400 dark:text-slate-500">03</span>
+            <h3 className="landing-h3">Manage and adapt in transit</h3>
+            <p className="landing-body">
+              Deploy TravelPulse to monitor live disruptions. If a flight is delayed,
+              the system automatically alerts downstream hotel and transfer bookings.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* 4. PRODUCT CAPABILITIES (Alternating Editorial) */}
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 mt-32 space-y-32">
+
+        {/* Feature 1: AI Trip Planner (Text Left, UI Right) */}
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+          <div className="flex-1 space-y-6">
+            <h3 className="landing-h2">AI Trip Planner</h3>
+            <p className="landing-body text-lg">
+              Generate highly complex, multi-city itineraries in seconds. The Copilot queries live airline
+              and hotel graphs to ensure every segment respects your strict budget and policy requirements.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-50 dark:bg-indigo-900/30">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Benefit: Eliminates 90% of manual scheduling.</span>
+            </div>
+          </div>
+          <div className="flex-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="space-y-4">
+              <div className="h-10 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded flex items-center px-4 gap-3 shadow-sm">
+                <Sparkles className="w-4 h-4 text-slate-400" />
+                <span className="text-sm text-slate-600 dark:text-slate-300">Plan a 4-day tech summit in London under $3k...</span>
+              </div>
+              <div className="space-y-2">
+                <div className="h-24 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900/50 rounded p-4 border-l-4 border-l-indigo-500 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">Proposed: London Tech Week Itinerary</span>
+                    <StatusBadge status="success">Ready</StatusBadge>
+                  </div>
+                  <span className="text-xs text-slate-500">Includes BA Flight 204 & The Hoxton Holborn.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature 2: Smart Itinerary Management (UI Left, Text Right) */}
+        <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20">
+          <div className="flex-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+              <DataList className="border-y-0">
+                <DataListItem
+                  label={<span className="flex items-center gap-2"><Navigation className="w-4 h-4" /> Flight UA 89</span>}
+                  value={<span className="text-sm text-slate-600 dark:text-slate-400">Boarding 14:00 • Gate E4</span>}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                <DataListItem
+                  label={<span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Transfer</span>}
+                  value={<span className="text-sm text-slate-600 dark:text-slate-400">Blacklane Chauffeur confirmed</span>}
+                />
+                <DataListItem
+                  label={<span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Hotel</span>}
+                  value={<span className="text-sm text-slate-600 dark:text-slate-400">Check-in at 16:30</span>}
+                />
+              </DataList>
+            </div>
+          </div>
+          <div className="flex-1 space-y-6">
+            <h3 className="landing-h2">Smart Itinerary Management</h3>
+            <p className="landing-body text-lg">
+              A unified, chronological feed of every booking segment. We connect flights, transfers, and hotels into a single
+              dependency graph so you never miss a connection.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-50 dark:bg-indigo-900/30">
+              <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Benefit: Single source of truth for all bookings.</span>
+            </div>
+          </div>
+        </div>
 
-                <div className="absolute top-5 left-5">
-                  <span className="rounded-full bg-indigo-600/90 text-white text-xs font-bold px-3.5 py-1.5 backdrop-blur-md flex items-center gap-1.5 shadow-md">
-                    <Glasses className="w-4 h-4" /> {vr.badge}
-                  </span>
+        {/* Feature 3: Destination Intelligence (Text Left, UI Right) */}
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+          <div className="flex-1 space-y-6">
+            <h3 className="landing-h2">Destination Intelligence</h3>
+            <p className="landing-body text-lg">
+              Pre-travel deep dives powered by local data nodes. Analyze weather patterns, local exchange rates,
+              and transit reliability before you even board the plane.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-50 dark:bg-indigo-900/30">
+              <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Benefit: No surprises upon arrival.</span>
+            </div>
+          </div>
+          <div className="flex-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-800 rounded shadow-sm">
+                <span className="text-xs text-slate-500 uppercase font-bold">Exchange Rate</span>
+                <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">1 USD = 148 JPY</div>
+              </div>
+              <div className="bg-white dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-800 rounded shadow-sm">
+                <span className="text-xs text-slate-500 uppercase font-bold">Transit Health</span>
+                <div className="text-xl font-bold text-emerald-600 mt-1">99.8% On-Time</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature 4: Travel Safety and Insights (UI Left, Text Right) */}
+        <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20">
+          <div className="flex-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-4 shadow-sm space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-bold text-slate-900 dark:text-white">Active Advisory</span>
+                <StatusBadge status="warning">Monitor</StatusBadge>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Heavy rainfall expected in destination region over the next 48 hours. Flights may experience ATC delays.
+              </p>
+            </div>
+          </div>
+          <div className="flex-1 space-y-6">
+            <h3 className="landing-h2">Travel Safety & Insights</h3>
+            <p className="landing-body text-lg">
+              Continuous monitoring of geopolitical, weather, and health advisories. TravelPulse actively alerts
+              you to disruptions that could impact your upcoming operations.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-50 dark:bg-indigo-900/30">
+              <ChevronRight className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Benefit: Proactive risk mitigation.</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      {/* 5. AI COPILOT WORKFLOW */}
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 mt-32 border-t border-slate-200 dark:border-slate-800 pt-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <Bot className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+              <span className="landing-label text-slate-700 dark:text-slate-300">Agent Copilot</span>
+            </div>
+            <h2 className="landing-h2">Conversational intent. Structural output.</h2>
+            <p className="landing-body text-lg">
+              Unlike generic chatbots, the TravelVerse Copilot doesn't just respond with text.
+              It natively hooks into the booking engine to generate deterministic, bookable structures
+              that you can immediately insert into your itinerary.
+            </p>
+            <div className="pt-4 flex gap-4">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Multi-city routing
+              </div>
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Budget strictness
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 sm:p-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm flex flex-col">
+
+              {/* User Prompt */}
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-end">
+                <div className="bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl rounded-tr-sm max-w-[85%] shadow-sm">
+                  Plan a 5-day trip to Jaipur under ₹40,000.
                 </div>
+              </div>
 
-                <div className="absolute bottom-5 left-5 right-5 space-y-2">
-                  <span className="text-xs sm:text-sm font-bold text-teal-300">{vr.location}</span>
-                  <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">{vr.title}</h3>
-                  <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
-                    <span className="text-slate-300">{vr.hotspotsCount} Interactive Hotspots</span>
-                    <span className="text-indigo-400 font-bold flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
-                      Launch 360° <ArrowRight className="w-4 h-4" />
-                    </span>
+              {/* AI Structured Response */}
+              <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="space-y-4 w-full">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                      I've constructed a 5-day itinerary optimized for your ₹40,000 budget, maintaining a cultural focus.
+                    </p>
+
+                    {/* Structured Result Block */}
+                    <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg p-4 shadow-sm w-full space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Jaipur Cultural Sprint</h4>
+                          <span className="text-xs text-slate-500">5 Days • Estimated: ₹38,500</span>
+                        </div>
+                        <StatusBadge status="success">In Budget</StatusBadge>
+                      </div>
+
+                      <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+
+                      <div className="flex flex-wrap gap-2">
+                        <button className="flex-1 min-w-[120px] justify-center flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                          <Navigation className="w-3.5 h-3.5" /> Add to Itinerary
+                        </button>
+                        <button className="flex-1 min-w-[120px] justify-center flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          <SlidersHorizontal className="w-3.5 h-3.5" /> Adjust Budget
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>
-            ))}
+
+            </div>
           </div>
-        )}
+
+        </div>
       </section>
 
-      {/* 6. TRENDING EXPERIENCES SECTION */}
-      <section id="section-trending-experiences" className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="warning" size="md">Instant Confirmation</Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">Handpicked by Local Insiders</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Trending Experiences
-            </h2>
-          </div>
+      {/* 6. INTELLIGENCE LAYER */}
+      <section className="max-w-[1200px] mx-auto px-6 sm:px-12 mt-32 border-t border-slate-200 dark:border-slate-800 pt-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
-          <Button
-            id="btn-view-all-experiences"
-            variant="outline"
-            size="md"
-            onClick={() => setModule("experiences")}
-            className="text-sm font-semibold"
-          >
-            View All Experiences <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm order-2 lg:order-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            <SkeletonExperienceCard />
-            <SkeletonExperienceCard />
-            <SkeletonExperienceCard />
-            <SkeletonExperienceCard />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {trendingExperiences.map((exp: any, i: number) => (
-              <Card key={exp.id} hoverEffect className="p-0 overflow-hidden flex flex-col justify-between group rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-lg">
+              {/* Data Block 1: Safety Index */}
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-4 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Safety Index</span>
+                  <Activity className="w-4 h-4 text-emerald-500" />
+                </div>
                 <div>
-                  <div className="relative h-48 sm:h-52 w-full overflow-hidden">
-                    <img
-                      src={exp.imageUrl}
-                      alt={exp.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 right-3">
-                      <span className="rounded-full bg-black/60 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
-                        ⭐ {exp.rating} ({exp.reviewsCount})
-                      </span>
-                    </div>
-                    <div className="absolute top-3 left-3">
-                      <span className="rounded-lg bg-amber-500/90 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
-                        {exp.badge}
-                      </span>
-                    </div>
-                    <div className="absolute bottom-3 left-3">
-                      <span className="rounded-lg bg-slate-900/85 text-white text-[11px] font-bold px-2.5 py-1 backdrop-blur-md">
-                        {exp.city}, {exp.country}
-                      </span>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">Level 1</div>
+                  <span className="text-xs text-slate-500">Exercise Normal Precautions</span>
+                </div>
+              </div>
+
+              {/* Data Block 2: Live Weather / Microclimate */}
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-4 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">7-Day Forecast</span>
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Optimal</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">24°</div>
+                  <span className="text-xs text-slate-500 pb-1">Clear & Crisp</span>
+                </div>
+              </div>
+
+              {/* Data Block 3: Travel Alerts List */}
+              <div className="sm:col-span-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Live Intel Feed</span>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <div className="px-4 py-3 flex items-start gap-3">
+                    <StatusBadge status="warning">Transit</StatusBadge>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Kyoto Station Track Maintenance</p>
+                      <p className="text-xs text-slate-500">Minor delays expected on local Shinkansen lines between 10:00 - 14:00 JST.</p>
                     </div>
                   </div>
-
-                  <div className="p-5 space-y-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                      {exp.category} • {exp.duration}
-                    </span>
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                      {exp.title}
-                    </h3>
+                  <div className="px-4 py-3 flex items-start gap-3">
+                    <StatusBadge status="success">Visa</StatusBadge>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">e-Visa Requirements Satisfied</p>
+                      <p className="text-xs text-slate-500">No further documentation required for entry based on current passport.</p>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="p-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">From</span>
-                    <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                      {formatCurrency(exp.price, currency)}
-                    </p>
-                  </div>
-
-                  <Button
-                    size="md"
-                    onClick={() => {
-                      const seedExp = SEED_EXPERIENCES[i] || SEED_EXPERIENCES[0];
-                      setSelectedExperience(seedExp);
-                      setCheckoutItem({
-                        type: "experience",
-                        item: seedExp,
-                        travelers: 2,
-                        dates: { start: "2026-09-15" },
-                        totalPrice: exp.price * 2,
-                      });
-                      setModule("experiences");
-                    }}
-                    className="text-xs sm:text-sm font-bold"
-                  >
-                    Book Now
-                  </Button>
-                </div>
-              </Card>
-            ))}
+            </div>
           </div>
-        )}
+
+          <div className="space-y-6 order-1 lg:order-2">
+            <h2 className="landing-h2">Travel intelligence. Operationalized.</h2>
+            <p className="landing-body text-lg">
+              We ingest global data feeds—weather APIs, diplomatic safety indexes, and live transit grids—and
+              transform them into structured intelligence directly attached to your destination.
+            </p>
+            <p className="landing-body text-lg">
+              Make confident routing decisions backed by raw data, not marketing copy.
+            </p>
+          </div>
+
+        </div>
       </section>
 
-      {/* 7. TRAVEL SAFETY SECTION */}
-      <section id="section-travel-safety" className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="success" size="md">
-                <ShieldCheck className="w-4 h-4 mr-1" /> {travelSafety.globalStatus}
-              </Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">
-                Direct IATA, WHO & Embassy Health Intelligence
-              </span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Travel Safety & Global Assurance
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <a
-              href={`tel:${travelSafety.emergencyPhone}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-sm font-bold hover:bg-emerald-500/20 transition-colors"
-            >
-              <PhoneCall className="w-4 h-4" /> 24/7 SOS: {travelSafety.emergencyPhone}
-            </a>
-          </div>
-        </div>
-
-        {/* Safety Advisories & Shield Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Advisories List */}
-          <div className="lg:col-span-2 space-y-4">
-            {travelSafety.advisories?.map((adv: any) => (
-              <div
-                key={adv.id}
-                className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shadow-sm"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                    <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{adv.country}</h4>
-                  </div>
-                  <span className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    {adv.level}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                  <div className="flex items-start gap-2">
-                    <FileText className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span><strong>Entry:</strong> {adv.entryRequirements}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 text-teal-500 shrink-0 mt-0.5" />
-                    <span><strong>Health:</strong> {adv.healthStatus}</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-400 pt-1 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-slate-400" /> {adv.lastVerified}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Safety Pillar Card */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-slate-900 to-indigo-950 text-white space-y-6 border border-indigo-900/40 shadow-2xl flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                <h4 className="text-lg sm:text-xl font-bold text-white">Autonomous Safety Shield</h4>
-              </div>
-
-              <div className="space-y-4">
-                {travelSafety.features?.map((f: any, i: number) => (
-                  <div key={i} className="space-y-1">
-                    <p className="text-sm font-bold text-indigo-300 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {f.title}
-                    </p>
-                    <p className="text-xs sm:text-sm text-slate-300 pl-6 leading-relaxed">{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+      {/* 7. FINAL CTA BLOCK */}
+      <section className="mt-32 border-y border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+        <div className="max-w-[800px] mx-auto px-6 py-24 text-center space-y-8">
+          <h2 className="landing-h2">Ready to deploy TravelVerse?</h2>
+          <p className="landing-body text-lg">
+            Standardize your travel operations, eliminate manual itinerary planning, and monitor global intelligence from a single workspace.
+          </p>
+          <div className="pt-4 w-full sm:w-auto">
             <Button
-              variant="outline"
-              size="md"
-              onClick={() => setModule("documents")}
-              className="w-full text-white border-white/20 hover:bg-white/10 text-sm font-semibold"
+              size="lg"
+              onClick={() => setModule('ai')}
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm px-10 py-4 text-base"
             >
-              Open Safety & Pass Vault
+              Start Planning
             </Button>
           </div>
         </div>
       </section>
 
-      {/* 8. AGENT COPILOT SECTION */}
-      <section id="section-agent-copilot" className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Badge variant="purple" size="md">
-                <Bot className="w-4 h-4 text-purple-300" /> Autonomous Agentic Copilot
-              </Badge>
-              <span className="text-xs sm:text-sm font-semibold text-slate-400">
-                Powered by Gemini 3.7 Real-Time Intelligence
-              </span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white mt-2">
-              Agent Copilot
-            </h2>
-          </div>
-        </div>
+      {/* 8. SAAS FOOTER */}
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 pt-16 pb-8">
+        <div className="max-w-[1200px] mx-auto px-6 sm:px-12">
 
-        <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-10 lg:p-12 border border-slate-800 shadow-2xl space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1.5">
-              <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-amber-300" /> Autonomous Flight, Hotel & Budget Calculator
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-400">
-                Ask Agent Copilot any travel query, rate comparison, or family budget optimization.
-              </p>
-            </div>
-
-            {/* Quick Sample Queries */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {[
-                "Plan 5-day Dubai trip under ₹2 lakh",
-                "Find Tokyo autumn business flights",
-                "Best Maldives overwater villa with slide",
-              ].map((query) => (
-                <button
-                  key={query}
-                  type="button"
-                  onClick={() => {
-                    setCopilotQuery(query);
-                    handleCopilotSubmit(undefined, query);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 text-xs sm:text-sm font-medium border border-white/10 transition-colors cursor-pointer"
-                >
-                  ⚡ {query}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Interactive Copilot Query Form */}
-          <form onSubmit={(e) => handleCopilotSubmit(e)} className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <input
-                id="input-copilot-query"
-                type="text"
-                value={copilotQuery}
-                onChange={(e) => setCopilotQuery(e.target.value)}
-                placeholder="Ask Agent Copilot: e.g. 'Can I do a 4-day Amalfi Coast trip in October under $3,000?'"
-                className="w-full rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-base sm:text-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all font-medium"
-              />
-            </div>
-            <Button
-              id="btn-submit-copilot"
-              type="submit"
-              disabled={copilotLoading}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl px-6 py-4 font-bold text-sm sm:text-base shrink-0"
-            >
-              {copilotLoading ? (
-                <RefreshCw className="w-5 h-5 animate-spin" />
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Send className="w-5 h-5" /> Ask Copilot
-                </span>
-              )}
-            </Button>
-          </form>
-
-          {/* Copilot Response Card */}
-          {copilotResponse && (
-            <div className="p-6 rounded-2xl bg-white/5 border border-indigo-500/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-base font-bold text-white">{copilotResponse.headline}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
+            {/* Brand Column */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setModule("home")}>
+                <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center shadow-sm">
+                  <Compass className="w-3.5 h-3.5 text-white" />
                 </div>
-                {copilotResponse.estimatedBudget && (
-                  <span className="text-xs sm:text-sm font-extrabold text-emerald-400 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    Est: {copilotResponse.estimatedBudget}
-                  </span>
-                )}
+                <span className="font-bold text-slate-900 dark:text-white tracking-tight">TravelVerse</span>
               </div>
-
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                {copilotResponse.analysis}
+              <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
+                The operating system for modern travel management. Consolidate itineraries, monitor intelligence, and deploy AI copilot workflows.
               </p>
-
-              {/* Suggested Followup Action Pills */}
-              {copilotResponse.suggestedPrompts && (
-                <div className="pt-3 flex flex-wrap items-center gap-2.5 border-t border-white/10">
-                  <span className="text-xs text-slate-400">Suggested Next Steps:</span>
-                  {copilotResponse.suggestedPrompts.map((p: string, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setAiPromptInput(p);
-                        setModule("ai");
-                      }}
-                      className="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs sm:text-sm font-semibold border border-indigo-500/30 transition-colors cursor-pointer"
-                    >
-                      → {p}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
+
+            {/* Product Links */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Product</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => setModule('ai')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">AI Planner</button></li>
+                <li><button onClick={() => setModule('trips')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">My Trips</button></li>
+                <li><button onClick={() => setModule('destinations')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Explore</button></li>
+              </ul>
+            </div>
+
+            {/* Resources Links */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Resources</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => setModule('home')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">How It Works</button></li>
+                <li><button onClick={() => setModule('travelpulse')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Travel Intelligence</button></li>
+              </ul>
+            </div>
+
+            {/* Company Links */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Company</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => setModule('support')} className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact Support</button></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <span className="text-xs text-slate-400">© 2026 TravelVerse AI. All rights reserved.</span>
+            <div className="flex items-center gap-6">
+              <button className="text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</button>
+              <button className="text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Service</button>
+            </div>
+          </div>
+
         </div>
-      </section>
+      </footer>
+
     </div>
   );
 };
-
-export default HomeView;

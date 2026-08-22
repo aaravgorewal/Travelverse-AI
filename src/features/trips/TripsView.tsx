@@ -1,144 +1,159 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Briefcase,
-  Calendar,
-  MapPin,
-  Clock,
-  Sparkles,
-  CheckCircle2,
-  Phone,
+  Search,
+  Filter,
   Plus,
   ArrowRight,
-  ShieldAlert,
+  Calendar,
+  Users,
+  MapPin
 } from "lucide-react";
 import { useTripStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
-import { Button, Card, Badge } from "../../components/ui";
 import { formatCurrency, formatDate } from "../../lib/utils";
-import { PackMateAICard } from "./components/PackMateAICard";
+import { PageHeader, DataList, StatusBadge, AIActionButton, SaaSEmptyState } from "../../components/ui/SaaSCore";
 
 export const TripsView: React.FC = () => {
-  const { trips, activeTrip, setActiveTrip, togglePackingItem } = useTripStore();
+  const { trips, activeTrip, setActiveTrip } = useTripStore();
   const { setModule } = useUIStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const handleTripClick = (tripId: string) => {
+    const tripToSet = [activeTrip, ...trips].find(t => t?.id === tripId);
+    if (tripToSet) {
+      setActiveTrip(tripToSet);
+    }
+    setModule("itinerary");
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active": return <StatusBadge status="info">Active</StatusBadge>;
+      case "upcoming":
+      case "confirmed & ticketed": return <StatusBadge status="success">Upcoming</StatusBadge>;
+      case "completed": return <StatusBadge status="neutral">Completed</StatusBadge>;
+      case "draft":
+      case "planning": return <StatusBadge status="warning">Draft</StatusBadge>;
+      default: return <StatusBadge status="neutral">{status}</StatusBadge>;
+    }
+  };
+
+  const filteredTrips = [activeTrip, ...trips].filter(Boolean).filter((trip: any, index, self) => 
+    index === self.findIndex((t) => t.id === trip.id)
+  ).filter((trip: any) => {
+    const matchesSearch = trip.destination.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          trip.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || trip.status.toLowerCase().includes(statusFilter);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Badge variant="purple">Autonomous Trip Hub</Badge>
-            <span className="text-xs text-slate-400 font-semibold">Active & Upcoming Journeys</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">My Trips & Itineraries</h1>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 pt-8">
+      <PageHeader
+        title="Trips & Itineraries"
+        description="Manage your active, upcoming, and past travel workspaces."
+        action={
+          <AIActionButton onClick={() => setModule("ai")}>
+            <Plus className="w-4 h-4 mr-1" /> Create Trip
+          </AIActionButton>
+        }
+      />
 
-        <Button onClick={() => setModule("ai")} className="gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>Plan New AI Trip</span>
-        </Button>
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search destination or title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-md">
+            {["all", "upcoming", "active", "draft", "completed"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 text-xs font-medium rounded capitalize transition-colors ${
+                  statusFilter === status
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Active Trip Hero Spotlight */}
-      {activeTrip && (
-        <Card className="p-0 overflow-hidden border-2 border-blue-500/30">
-          <div className="relative h-64 sm:h-80 w-full overflow-hidden">
-            <img src={activeTrip.coverImage} alt={activeTrip.title} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
-
-            <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 text-white">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="success">Upcoming Journey</Badge>
-                  {activeTrip.isAIGenerated && <Badge variant="purple">Gemini 3.7 AI Optimized</Badge>}
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold">{activeTrip.title}</h2>
-                <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-4">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-blue-400" /> {activeTrip.destination}, {activeTrip.country}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm overflow-hidden">
+        {filteredTrips.length === 0 ? (
+          <SaaSEmptyState
+            title="No trips found"
+            description="You don't have any trips matching these filters."
+            action={<AIActionButton onClick={() => setModule("ai")}>Create Trip</AIActionButton>}
+          />
+        ) : (
+          <DataList className="border-y-0">
+            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className="col-span-4">Trip Details</div>
+              <div className="col-span-3">Dates & Status</div>
+              <div className="col-span-2">Travelers</div>
+              <div className="col-span-2">Budget</div>
+              <div className="col-span-1 text-right">Action</div>
+            </div>
+            
+            {filteredTrips.map((trip: any) => (
+              <div
+                key={trip.id}
+                onClick={() => handleTripClick(trip.id)}
+                className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center px-4 md:px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+              >
+                <div className="col-span-1 md:col-span-4 flex flex-col">
+                  <span className="font-semibold text-slate-900 dark:text-white truncate">
+                    {trip.title}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-indigo-400" /> {formatDate(activeTrip.startDate)} - {formatDate(activeTrip.endDate)}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button onClick={() => setModule("itinerary")} size="lg" className="shadow-xl">
-                  Open Interactive Itinerary →
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats Banner */}
-          <div className="p-6 bg-slate-50 dark:bg-slate-900/90 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-slate-200 dark:border-slate-800">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Total Budget</span>
-              <p className="text-lg font-extrabold text-slate-900 dark:text-white">
-                {formatCurrency(activeTrip.budgetTotal, activeTrip.currency)}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Total Days</span>
-              <p className="text-lg font-extrabold text-slate-900 dark:text-white">{activeTrip.days.length} Days Planned</p>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Travelers</span>
-              <p className="text-lg font-extrabold text-slate-900 dark:text-white">{activeTrip.travelersCount} Guests</p>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Packing Progress</span>
-              <p className="text-lg font-extrabold text-emerald-600">
-                {activeTrip.packingList.filter((p) => p.packed).length}/{activeTrip.packingList.length} Packed
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Packing Checklist & Emergency Contacts Grid */}
-      {activeTrip && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Packing Checklist */}
-          <PackMateAICard />
-
-          {/* Emergency SOS & Local Support */}
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Emergency Contacts & SOS</h3>
-              <Badge variant="danger">24/7 Verified</Badge>
-            </div>
-
-            <div className="space-y-3">
-              {activeTrip.emergencyContacts.map((contact, i) => (
-                <div key={i} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{contact.name}</h4>
-                    <p className="text-[11px] text-slate-400">{contact.role}</p>
+                  <div className="flex items-center text-xs text-slate-500 mt-1 gap-1">
+                    <MapPin className="w-3 h-3" /> {trip.destination}, {trip.country}
                   </div>
-                  <a
-                    href={`tel:${contact.phone}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold border border-rose-200/50"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>{contact.phone}</span>
-                  </a>
                 </div>
-              ))}
 
-              <div className="mt-4 p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40 text-xs text-blue-800 dark:text-blue-200">
-                <p className="font-bold flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-blue-600" /> TravelVerse SOS Protocol
-                </p>
-                <p className="mt-1 text-[11px] text-blue-700/80 dark:text-blue-300/80">
-                  Instant biometric embassy locator and automatic medical flight insurance authorization are active on this trip.
-                </p>
+                <div className="col-span-1 md:col-span-3 flex flex-col items-start gap-1">
+                  {getStatusBadge(trip.status)}
+                  <span className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                    <Calendar className="w-3 h-3" /> {formatDate(trip.startDate)}
+                  </span>
+                </div>
+
+                <div className="col-span-1 md:col-span-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <Users className="w-4 h-4" /> {trip.travelersCount}
+                </div>
+
+                <div className="col-span-1 md:col-span-2 flex flex-col">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">
+                    {formatCurrency(trip.budgetTotal || 0, trip.currency || "USD")}
+                  </span>
+                  {trip.progressPercent !== undefined && (
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                      <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${trip.progressPercent}%` }} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="col-span-1 md:col-span-1 flex justify-end">
+                  <button className="p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-indigo-600 dark:hover:text-indigo-400">
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </Card>
-        </div>
-      )}
+            ))}
+          </DataList>
+        )}
+      </div>
     </div>
   );
 };

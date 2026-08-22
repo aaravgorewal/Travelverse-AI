@@ -20,6 +20,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { aiAPI } from "../../../lib/api/ai";
+import { GenerateTripPlanParams } from "../types";
 
 export interface TripGenieFormValues {
   destination: string;
@@ -186,13 +187,11 @@ export function TripGenieForm({ onSubmit, isLoading, initialValues }: TripGenieF
       durationDays,
       daysCount: durationDays,
       travelers: totalTravelers,
-      travelersCount: totalTravelers,
       budget: budgetTier,
       budgetLevel: budgetTier,
-      travelStyle: travelStyles,
+      travelStyles,
       interests,
       specialRequirements,
-      dates: `${startDate} to ${endDate}`,
     });
   };
 

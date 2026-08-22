@@ -189,10 +189,8 @@ export const FlightsView: React.FC = () => {
       };
       
       await explain({
+        topic: `Flight analysis: ${flight.airline} ${flight.originCity}-${flight.destinationCity}, ${flight.price} ${flight.currency}, ${flight.totalDuration}, ${flight.stops} stops. Is this a good value? Pros & cons?`,
         context_id: flight.id,
-        item_type: "flight",
-        context: flightDetails,
-        query: "Provide an expert flight analysis: Is this a good value? What are the pros & cons? Any smart tips?"
       });
     } catch (e) {
       // Error is handled by actionStates, can trigger a retry UI

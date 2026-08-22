@@ -1,5 +1,32 @@
 import { aiAPI } from "../../lib/api/ai";
 
+export interface TripContextData {
+  destination: string;
+  dates: { start: string; end: string };
+  travelers: { adults: number; children: number };
+  budget: string;
+  preferences: string[];
+  bookings: { id: string; type: string; title: string; status: string; date: string; amount: number }[];
+  currentLocation: string;
+  tripStage: string;
+}
+
+export interface GenerateTripPlanParams {
+  destination: string;
+  durationDays?: number;
+  daysCount?: number;
+  startDate?: string;
+  endDate?: string;
+  travelers?: number;
+  budget?: string | number;
+  budgetLevel?: string;
+  travelStyles?: string[];
+  interests?: string[];
+  specialRequirements?: string;
+  aiAction?: string;
+  baseTrip?: any;
+}
+
 export interface AIChatMessageItem {
   id: string;
   role: "user" | "assistant";

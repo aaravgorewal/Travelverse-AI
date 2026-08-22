@@ -23,6 +23,7 @@ import { aiAPI } from "../../lib/api/ai";
 import { TripGenieForm, TripGenieFormValues } from "./components/TripGenieForm";
 import { TripGenieDisplay } from "./components/TripGenieDisplay";
 import { TripGenieShareModal } from "./components/TripGenieShareModal";
+import { GenerateTripPlanParams } from "./types";
 
 interface TripGenieViewProps {
   initialTrip?: TripPlan | null;

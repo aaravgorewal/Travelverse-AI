@@ -65,7 +65,7 @@ export const DealScopeDrawer: React.FC = () => {
     try {
       const res = await aiAPI.explain({
         topic: "Why is Smart Flex Plus the Best Value?",
-        context: "Comparing 3 travel options based on price, duration, and cancellation policies.",
+        context_id: "compare-3-travel-options",
       });
       setExplanation({
         rationale: res.message || "This option balances price with a significantly shorter duration and flexible cancellation.",

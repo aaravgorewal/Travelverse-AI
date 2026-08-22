@@ -102,15 +102,17 @@ export const CustomersView: React.FC = () => {
     setPersonalizeError(null);
     try {
       const res = await aiAPI.personalize({
-        context: { name: customer.name, tier: customer.tier },
-        travelPreferences: { 
+        user_id: customer.id || customer.name,
+        context: { 
+          name: customer.name, 
+          tier: customer.tier,
           budget: customer.budgetTier, 
           dietary: customer.dietaryPreference, 
           seat: customer.seatPreference,
           airlines: customer.favoriteAirlines,
-          hotels: customer.favoriteHotels 
+          hotels: customer.favoriteHotels,
+          destination: "Agent's Choice"
         },
-        destination: "Agent's Choice" // Or could prompt for a destination
       });
       
       const prompt = `Create a package for ${customer.name}. Use this AI context: ${res.message}. Preferences: ${customer.budgetTier} budget, ${customer.dietaryPreference} food.`;

@@ -45,17 +45,17 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={cn(
-        "rounded-2xl transition-all duration-200 relative",
+        "rounded-lg transition-all duration-200 relative",
         paddingStyles[padding],
         variantStyles[variant],
-        hoverEffect && "hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 cursor-pointer",
-        aiGlow && "shadow-lg shadow-purple-500/20 border-purple-500/40",
+        hoverEffect && "hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 cursor-pointer",
+        aiGlow && "shadow-sm shadow-indigo-500/10 border-indigo-500/30",
         className
       )}
       {...props}
     >
       {variant === "ai" && (
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-600" />
       )}
       {children}
     </div>

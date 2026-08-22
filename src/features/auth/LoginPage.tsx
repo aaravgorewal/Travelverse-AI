@@ -92,7 +92,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, prefillEmail =
     try {
       const res = await authService.loginWithPassword(data.email, data.password);
       setSuccessMessage(res.message || "Authentication successful! Entering TravelVerse...");
-      login(res.user, res.token, res.sessionExpiry);
+      login(res.user, res.token, res.refreshToken);
 
       setTimeout(() => {
         if (res.user.role === "agent") {
@@ -150,7 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, prefillEmail =
     try {
       const res = await authService.loginWithOtp(data.email, data.otpCode);
       setSuccessMessage("One-Time Password verified successfully! Redirecting...");
-      login(res.user, res.token, res.sessionExpiry);
+      login(res.user, res.token, res.refreshToken);
 
       setTimeout(() => {
         setModule(res.user.role === "agent" ? "agent" : "home");
@@ -175,7 +175,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, prefillEmail =
       const res = await authService.loginWithGoogle(googleUser);
       setShowGoogleModal(false);
       setSuccessMessage(`Signed in as ${googleUser.name} via Google`);
-      login(res.user, res.token, res.sessionExpiry);
+      login(res.user, res.token, res.refreshToken);
 
       setTimeout(() => {
         setModule("home");

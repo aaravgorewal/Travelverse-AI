@@ -15,7 +15,7 @@ interface AIResponse {
   actions: any[];
   sources: any[];
   warnings: string[];
-  confidence: "HIGH" | "MEDIUM" | "LOW";
+  confidence: "high" | "medium" | "low";
 }
 
 interface ChatMessage {

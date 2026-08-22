@@ -35,7 +35,7 @@ export const FlightSearchPage: React.FC<FlightSearchPageProps> = ({
   return (
     <div className="space-y-8 sm:space-y-12 pb-16 w-full max-w-full overflow-x-hidden">
       {/* Hero Header Section */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white p-6 sm:p-10 lg:p-14 shadow-2xl border border-blue-900/50 overflow-hidden">
+      <div className="relative border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-6 sm:p-10 lg:p-14 shadow-sm border  overflow-hidden">
         {/* Background ambient glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -47,7 +47,7 @@ export const FlightSearchPage: React.FC<FlightSearchPageProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-            Fly Anywhere. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300">Intelligently Routed.</span>
+            Fly Anywhere. <span className="text-indigo-600 dark:text-indigo-400">Intelligently Routed.</span>
           </h1>
 
           <p className="text-xs sm:text-sm lg:text-base text-slate-300 max-w-2xl leading-relaxed">
@@ -56,7 +56,7 @@ export const FlightSearchPage: React.FC<FlightSearchPageProps> = ({
         </div>
 
         {/* Floating Search Card */}
-        <div className="relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/20 dark:border-slate-800 text-slate-900 dark:text-white">
+        <div className="relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-white/20 dark:border-slate-800 text-slate-900 dark:text-white">
           <FlightSearchForm onSearch={onSearch} />
         </div>
       </div>
@@ -80,7 +80,7 @@ export const FlightSearchPage: React.FC<FlightSearchPageProps> = ({
             <div
               key={idx}
               onClick={() => onQuickRoute(route.fromCity, route.from, route.toCity, route.to)}
-              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-xl hover:border-blue-500/60 transition-all cursor-pointer group flex flex-col justify-between gap-4"
+              className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-sm hover:border-blue-500/60 transition-all cursor-pointer group flex flex-col justify-between gap-4"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60">
@@ -149,7 +149,7 @@ export const FlightSearchPage: React.FC<FlightSearchPageProps> = ({
             <div
               key={flight.id}
               onClick={() => onSelectFlight(flight)}
-              className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/60 transition-all cursor-pointer flex flex-col justify-between gap-4 group"
+              className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-sm hover:border-blue-500/60 transition-all cursor-pointer flex flex-col justify-between gap-4 group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

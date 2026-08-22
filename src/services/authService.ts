@@ -5,6 +5,7 @@ export interface LoginResponse {
   success: boolean;
   user: UserProfile;
   token: string;
+  refreshToken?: string;
   expiresIn?: number;
   sessionExpiry?: number;
   message?: string;
@@ -14,6 +15,7 @@ export interface RegisterResponse {
   success: boolean;
   user: UserProfile;
   token: string;
+  refreshToken?: string;
   expiresIn?: number;
   sessionExpiry?: number;
   requireEmailVerification: boolean;
@@ -134,15 +136,7 @@ export const authService = {
     return apiClient.post("/v1/auth/verify", { email, code });
   },
 
-  // 8. Session Validation
-  async getCurrentUser(): Promise<{ success: boolean; user: UserProfile; sessionExpiry?: number }> {
-    return apiClient.get("/v1/auth/me");
-  },
 
-  // 9. Logout
-  async logout(): Promise<{ success: boolean; message: string }> {
-    return apiClient.post("/v1/auth/logout", {});
-  },
 
   // 10. Delete Account
   async deleteAccount(): Promise<{ success: boolean; message: string }> {

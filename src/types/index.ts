@@ -450,6 +450,8 @@ export interface TripActivity {
   description: string;
   duration?: string;
   estimatedCost?: number;
+  costEstimate?: number;
+  aiInsight?: string;
   cost?: number;
   transitToNext?: string;
   bookingRef?: string;

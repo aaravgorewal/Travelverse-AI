@@ -220,7 +220,7 @@ export const ExperiencesView: React.FC = () => {
   return (
     <div className="space-y-8 pb-16 w-full max-w-full">
       {/* 1. HERO HEADER */}
-      <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white p-6 sm:p-10 shadow-xl border border-blue-900/30 relative overflow-hidden">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-6 sm:p-10 shadow-sm border border-blue-900/30 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 

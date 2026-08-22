@@ -12,8 +12,9 @@ interface AIActionState<T> {
 }
 
 export function useAIAction<T = any>() {
-  const { addToast: showToast } = useUIStore(); // Fallback if showToast missing
-  const toastMethod = (useUIStore() as any).showToast || (useUIStore() as any).addToast;
+  const showToast = (msg: { title: string; message: string; type: string }) => {
+    console.error(`[${msg.type.toUpperCase()}] ${msg.title}: ${msg.message}`);
+  };
   const [state, setState] = useState<AIActionState<T>>({
     status: "idle",
     data: null,
@@ -81,14 +82,14 @@ export function useAIAction<T = any>() {
       }
       
       if (options?.showToastOnError !== false) {
-        toastMethod({
+        showToast({
           title: isUnavailable ? "Service Unavailable" : "Action Failed",
           message: errorMsg,
           type: "error"
         });
       }
     }
-  }, [showToast]);
+  }, []);
 
   return { ...state, execute, reset };
 }

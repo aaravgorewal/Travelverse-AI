@@ -52,11 +52,8 @@ export const PackMateAICard: React.FC = () => {
     try {
       const res = await aiAPI.packingList({
         destination: context.destination,
-        duration_days: context.durationDays,
-        weatherForecast: { temp: 25, condition: context.weather },
-        activities: [context.activities],
-        travelers: 1,
-        specialNeeds: [context.travelerType],
+        duration_days: context.duration_days,
+        weather: context.weather,
       });
 
       // Flatten AI response into flat packingList structure

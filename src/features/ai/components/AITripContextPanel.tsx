@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { aiAPI } from "../../../lib/api/ai";
 import { useTripStore, useTravelStore } from "../../../stores/useTravelStore";
+import { TripContextData } from "../types";
 
 interface AITripContextPanelProps {
   tripContext: TripContextData;
@@ -189,7 +190,7 @@ export const AITripContextPanel: React.FC<AITripContextPanelProps> = ({
           start: activeTrip.startDate || "2026-09-12",
           end: activeTrip.endDate || "2026-09-19",
         },
-        travelers: activeTrip.travelersCount || 2,
+        travelers: { adults: activeTrip.travelersCount || 2, children: 0 },
         budget: `$${activeTrip.budgetTotal || 5400}`,
         preferences: (activeTrip as any).interests || tripContext.preferences,
         bookings: storeBookings?.map((b) => ({

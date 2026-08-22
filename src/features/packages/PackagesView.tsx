@@ -44,7 +44,7 @@ export const PackagesView: React.FC = () => {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 text-white p-8 sm:p-10 shadow-xl border border-purple-800/40 relative overflow-hidden">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-8 sm:p-10 shadow-sm border  relative overflow-hidden">
         <div className="max-w-2xl space-y-3">
           <Badge variant="purple">Fully Guided & Private Luxury Packages</Badge>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
@@ -149,7 +149,7 @@ export const PackagesView: React.FC = () => {
         >
           <div className="space-y-6">
             {/* Highlights */}
-            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 space-y-2">
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark: space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
                 Signature Package Inclusions
               </h4>

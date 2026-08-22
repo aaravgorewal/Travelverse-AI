@@ -22,7 +22,7 @@ export const VRGalleryView: React.FC = () => {
   return (
     <div className="space-y-8 pb-16">
       {/* VR Metaverse Showcase Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 text-white p-8 sm:p-12 shadow-2xl border border-indigo-900/50 relative overflow-hidden text-center space-y-4">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-8 sm:p-12 shadow-sm border  relative overflow-hidden text-center space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 border border-white/20 text-xs font-bold text-indigo-300">
           <Glasses className="w-3.5 h-3.5 text-indigo-400" />
           <span>Spatial Metaverse & WebGL 360° Studio</span>

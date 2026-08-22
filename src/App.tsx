@@ -1,9 +1,9 @@
 import React from "react";
 import { useUIStore } from "./stores/useUIStore";
 import { useAuthStore } from "./stores/useAuthStore";
-import { Navbar } from "./components/layout/Navbar";
-import { Footer } from "./components/layout/Footer";
-import { MobileBottomNav } from "./components/layout/MobileBottomNav";
+import { Sidebar } from "./components/layout/Sidebar";
+import { CompactHeader } from "./components/layout/CompactHeader";
+import { PublicHeader } from "./components/layout/PublicHeader";
 import { AIConciergeDrawer } from "./components/shared/AIConciergeDrawer";
 const VRViewerModal = React.lazy(() => import("./components/shared/VRViewerModal").then(module => ({ default: module.VRViewerModal })));
 import { OfflineGuardian } from "./components/shared/OfflineGuardian";
@@ -43,6 +43,7 @@ import { ShieldAlert, LogIn, Lock } from "lucide-react";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 
 export function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const { currentModule, setModule } = useUIStore();
   const { isAuthenticated, user, isSessionExpired, clearSessionExpired, logout } = useAuthStore();
 
@@ -167,21 +168,32 @@ export function App() {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
-        {/* Top Main Navigation (Desktop & Tablet) */}
-        {!isB2BPortalActive && <Navbar />}
+      <div className="h-screen w-full overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex font-sans selection:bg-indigo-500 selection:text-white">
+        
+        {/* Internal Dashboard Shell (Skipped on Homepage) */}
+        {currentModule !== 'home' && (
+          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        )}
 
-        {/* Main Feature Viewport (Optimized for 1440px Desktop, 768px Tablet, 360px Mobile) */}
-        <main className={`flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 lg:pt-10 ${isB2BPortalActive ? 'pb-6' : 'pb-24 md:pb-16'} overflow-x-hidden min-w-0`}>
-          <ErrorBoundary>
-            <React.Suspense fallback={<PageSkeleton />}>
-              {renderModule()}
-            </React.Suspense>
-          </ErrorBoundary>
-        </main>
+        {/* Main Application Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950">
+          
+          {/* Conditional Headers */}
+          {currentModule === 'home' ? (
+            <PublicHeader />
+          ) : (
+            <CompactHeader onMenuToggle={() => setIsSidebarOpen(true)} />
+          )}
 
-        {/* Mobile Bottom Navigation Bar */}
-        {!isB2BPortalActive && <MobileBottomNav />}
+          {/* Main Scrollable Viewport */}
+          <main className={`flex-1 w-full mx-auto overflow-y-auto overflow-x-hidden ${currentModule === 'home' ? '' : 'max-w-[1600px]'}`}>
+            <ErrorBoundary>
+              <React.Suspense fallback={<PageSkeleton />}>
+                {renderModule()}
+              </React.Suspense>
+            </ErrorBoundary>
+          </main>
+        </div>
 
         {/* Universal Floating AI Concierge Drawer */}
         <AIConciergeDrawer />
@@ -199,9 +211,6 @@ export function App() {
 
         {/* Universal Global Search Palette */}
         <GlobalSearchOverlay />
-
-        {/* Global Bottom Trust & Navigation Footer */}
-        {!isB2BPortalActive && <Footer />}
 
         {/* Expired Session Lockout Modal Prompt */}
         {isSessionExpired && (

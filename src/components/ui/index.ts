@@ -14,3 +14,4 @@ export * from "./ProgressBar";
 export * from "./Avatar";
 export * from "./EmptyState";
 export * from "./OptimizedImage";
+export * from "./SaaSCore";

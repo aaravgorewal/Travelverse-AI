@@ -9,6 +9,7 @@ interface AuthState {
   refreshToken: string | null;
   isSessionExpired: boolean;
   initSession: () => Promise<void>;
+  login: (user: UserProfile | null, token?: string, refreshToken?: string) => void;
   setUser: (user: UserProfile | null, token?: string, refreshToken?: string) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
   completeOnboarding: (preferences: any) => void;

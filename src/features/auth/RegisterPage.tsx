@@ -82,7 +82,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       });
 
       setSuccessMessage(res.message || "Account registered successfully!");
-      login(res.user, res.token, res.sessionExpiry);
+      login(res.user, res.token, res.refreshToken);
 
       setTimeout(() => {
         if (res.requireEmailVerification) {

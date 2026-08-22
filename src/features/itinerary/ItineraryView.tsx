@@ -1,24 +1,15 @@
 import React, { useState } from "react";
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  Sparkles,
-  CloudSun,
-  Utensils,
-  Camera,
-  Compass,
-  ArrowRight,
-  Plus,
-  RefreshCw,
-  CheckCircle,
+  Calendar, Clock, MapPin, Sparkles, CloudSun, Utensils,
+  Camera, Compass, ArrowRight, Plus, RefreshCw, MoreVertical,
+  CheckCircle, Circle
 } from "lucide-react";
 import { useTripStore } from "../../stores/useTravelStore";
 import { useUIStore } from "../../stores/useUIStore";
 import { aiAPI } from "../../lib/api/ai";
-import { Button, Card, Badge } from "../../components/ui";
 import { formatCurrency } from "../../lib/utils";
 import { useToast } from "../../components/ui/Toast";
+import { PageHeader, ContextPanel, DataList, DataListItem, AIActionButton, StatusBadge } from "../../components/ui/SaaSCore";
 
 export const ItineraryView: React.FC = () => {
   const { activeTrip, updateTrip } = useTripStore();
@@ -29,10 +20,11 @@ export const ItineraryView: React.FC = () => {
 
   if (!activeTrip) {
     return (
-      <div className="text-center py-20 space-y-4">
-        <Compass className="w-12 h-12 text-slate-400 mx-auto" />
-        <h2 className="text-lg font-bold">No active trip selected</h2>
-        <Button onClick={() => setModule("ai")}>Create Trip with AI</Button>
+      <div className="flex flex-col items-center justify-center py-20 border border-dashed border-slate-300 dark:border-slate-800 rounded-lg max-w-4xl mx-auto mt-8">
+        <Compass className="w-8 h-8 text-slate-400 mb-4" />
+        <h3 className="text-sm font-medium text-slate-900 dark:text-white">No active workspace</h3>
+        <p className="text-sm text-slate-500 mb-6">Select a trip from your management dashboard to view its itinerary.</p>
+        <button onClick={() => setModule("trips")} className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm">Return to Trips</button>
       </div>
     );
   }
@@ -42,152 +34,186 @@ export const ItineraryView: React.FC = () => {
   const handleOptimizeItinerary = async () => {
     setIsOptimizing(true);
     try {
-      const res = await aiAPI.optimizeItinerary({ itinerary_id: activeTrip!.id });
-      if (res.data?.optimizedDays || [] && res.data?.optimizedDays.length > 0) {
-        updateTrip({ ...activeTrip!, days: res.data.optimizedDays });
+      const res = await aiAPI.optimizeItinerary({ itinerary_id: activeTrip.id });
+      if (res.data?.optimizedDays?.length > 0) {
+        updateTrip({ ...activeTrip, days: res.data.optimizedDays });
         showToast({
-          title: "Itinerary Optimized",
-          message: `Saved ${res.data?.timeSavedMinutes || 0} min transit time and ${res.data?.carbonSavedKg || 0}kg CO₂2.`,
+          title: "Optimization Complete",
+          message: `Saved transit time and optimized routes.`,
           type: "success"
         });
       }
     } catch (err: any) {
-      showToast({ title: "Optimization Failed", message: err.message || "Could not optimize itinerary. Please try again.", type: "error" });
+      showToast({ title: "Optimization Failed", message: "Could not optimize itinerary.", type: "error" });
     } finally {
       setIsOptimizing(false);
     }
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <Badge variant="purple">Autonomous Schedule</Badge>
-            <span className="text-xs font-semibold text-slate-400">Live Weather & Transit Engine</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{activeTrip.title}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {activeTrip.destination}, {activeTrip.country} • {activeTrip.days.length} Total Days
-          </p>
-        </div>
+    <div className="flex h-full bg-white dark:bg-slate-950 overflow-hidden">
+      
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col min-w-0 border-r border-slate-200 dark:border-slate-800">
+        
+        {/* Header */}
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+          <PageHeader
+            title={activeTrip.title}
+            description={`${activeTrip.destination}, ${activeTrip.country} • ${activeTrip.days.length} Days`}
+            action={
+              <div className="flex gap-2">
+                <button
+                  onClick={handleOptimizeItinerary}
+                  disabled={isOptimizing}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20"
+                >
+                  {isOptimizing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Optimize Route
+                </button>
+                <button onClick={toggleAIConcierge} className="px-3 py-1.5 text-sm font-medium bg-slate-100 text-slate-700 rounded-md border border-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                  Ask Concierge
+                </button>
+              </div>
+            }
+          />
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleOptimizeItinerary}
-            isLoading={isOptimizing}
-            className="gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>AI Re-Optimize Transit</span>
-          </Button>
-
-          <Button size="sm" onClick={toggleAIConcierge}>
-            Ask Concierge
-          </Button>
-        </div>
-      </div>
-
-      {/* Day Selector Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {activeTrip.days.map((day) => {
-          const isSelected = day.dayNumber === selectedDayNumber;
-          return (
-            <button
-              key={day.dayNumber}
-              onClick={() => setSelectedDayNumber(day.dayNumber)}
-              className={`flex flex-col items-start min-w-[130px] p-3 rounded-2xl border transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 scale-102"
-                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-300"
-              }`}
-            >
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-blue-100" : "text-slate-400"}`}>
+          {/* Day Tabs */}
+          <div className="flex gap-1 overflow-x-auto mt-4">
+            {activeTrip.days.map((day) => (
+              <button
+                key={day.dayNumber}
+                onClick={() => setSelectedDayNumber(day.dayNumber)}
+                className={`flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  selectedDayNumber === day.dayNumber
+                    ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300"
+                }`}
+              >
                 Day {day.dayNumber}
-              </span>
-              <span className="text-xs font-bold truncate w-full mt-0.5">{day.theme}</span>
-              <span className={`text-[10px] mt-1 ${isSelected ? "text-blue-200" : "text-slate-400"}`}>
-                {day.activities.length} activities
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Selected Day Timeline & Weather Header */}
-      {currentDay && (
-        <div className="space-y-6">
-          <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Day {currentDay.dayNumber}: {currentDay.theme}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{currentDay.date}</p>
-            </div>
-
-            {currentDay.weatherForecast && (
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs">
-                <CloudSun className="w-4 h-4 text-amber-500" />
-                <span className="font-bold">{currentDay.weatherForecast.temp || currentDay.weatherForecast.tempC || 24}°C</span>
-                <span className="text-slate-400 capitalize">{currentDay.weatherForecast.condition}</span>
-                {currentDay.weatherForecast.aiRecommendation && (
-                  <span className="text-blue-600 dark:text-blue-400 text-[11px] font-semibold">{currentDay.weatherForecast.aiRecommendation}</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Activity Cards Timeline */}
-          <div className="space-y-4 relative before:absolute before:inset-0 before:left-[22px] before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-            {currentDay.activities.map((act, index) => (
-              <div key={act.id} className="relative flex items-start gap-4 pl-2">
-                {/* Timeline icon node */}
-                <div className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold shadow-md ring-4 ring-white dark:ring-slate-900">
-                  {index + 1}
-                </div>
-
-                <Card className="flex-1 p-5 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400">
-                        {act.time} {act.duration ? `• ${act.duration}` : ""}
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{act.title}</h4>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Badge variant="purple" size="sm">{act.type}</Badge>
-                      {(act.estimatedCost !== undefined || act.cost !== undefined) && (
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                          {(act.estimatedCost ?? act.cost) === 0 ? "Free" : `$${act.estimatedCost ?? act.cost}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{act.description}</p>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                    <div className="flex items-center gap-1 text-slate-400">
-                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                      <span>{act.location}</span>
-                    </div>
-
-                    {act.transitToNext && (
-                      <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-                        🚗 Next: {act.transitToNext}
-                      </span>
-                    )}
-                  </div>
-                </Card>
-              </div>
+              </button>
             ))}
           </div>
         </div>
-      )}
+
+        {/* Timeline Area */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          {currentDay && (
+            <div className="max-w-3xl mx-auto">
+              
+              {/* Day Header */}
+              <div className="mb-8 flex items-end justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{currentDay.theme}</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{currentDay.date}</p>
+                </div>
+                {currentDay.weatherForecast && (
+                  <div className="text-right">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <CloudSun className="w-4 h-4 text-slate-400" />
+                      {currentDay.weatherForecast.temp || currentDay.weatherForecast.tempC || 24}°C
+                    </div>
+                    {currentDay.weatherForecast.aiRecommendation && (
+                      <span className="text-xs text-indigo-600 dark:text-indigo-400 block mt-0.5">
+                        {currentDay.weatherForecast.aiRecommendation}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline Items */}
+              <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-3 space-y-8 pb-8">
+                {currentDay.activities.map((act, index) => (
+                  <div key={act.id} className="relative pl-8 group">
+                    {/* Timeline Dot */}
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-600 group-hover:border-indigo-500 transition-colors" />
+                    
+                    {/* Activity Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      
+                      {/* Time Block */}
+                      <div className="w-24 flex-shrink-0 pt-0.5">
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">{act.time}</span>
+                        {act.duration && <span className="block text-xs text-slate-500">{act.duration}</span>}
+                      </div>
+
+                      {/* Content Panel */}
+                      <div className="flex-1 min-w-0 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 p-4 shadow-sm group-hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{act.title}</h4>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                              <MapPin className="w-3 h-3" />
+                              <span>{act.location}</span>
+                            </div>
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                            <button className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><MoreVertical className="w-4 h-4"/></button>
+                          </div>
+                        </div>
+
+                        {act.description && (
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-3">{act.description}</p>
+                        )}
+
+                        {act.costEstimate && (
+                          <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+                            Est. {formatCurrency(act.costEstimate, activeTrip.currency)}
+                          </div>
+                        )}
+                        
+                        {act.aiInsight && (
+                          <div className="mt-3 p-2 rounded-md bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-800/30 text-xs text-indigo-700 dark:text-indigo-300 flex gap-2">
+                            <Sparkles className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                            <span>{act.aiInsight}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Activity Button */}
+              <div className="pl-11 mt-4">
+                <button className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                  <Plus className="w-4 h-4" /> Add Activity
+                </button>
+              </div>
+
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Context Panel */}
+      <ContextPanel title="Workspace Details" className="w-80 hidden lg:flex flex-shrink-0">
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Overview</h4>
+            <DataList>
+              <DataListItem label="Status" value={<StatusBadge status="success">Upcoming</StatusBadge>} />
+              <DataListItem label="Budget" value={formatCurrency(activeTrip.budgetTotal || 0, activeTrip.currency)} />
+              <DataListItem label="Travelers" value={`${activeTrip.travelersCount} Guests`} />
+            </DataList>
+          </div>
+          
+          <div>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Smart Actions</h4>
+            <div className="space-y-2">
+              <button className="w-full flex items-center justify-between p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">
+                <span>Sync to Calendar</span>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+              <button className="w-full flex items-center justify-between p-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">
+                <span>View Bookings</span>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </ContextPanel>
     </div>
   );
 };

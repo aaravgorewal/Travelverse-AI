@@ -38,7 +38,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
   return (
     <div className="space-y-10 sm:space-y-14 pb-16 w-full max-w-full overflow-x-hidden">
       {/* Hero Header & Floating Search Card */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 lg:p-14 shadow-2xl border border-indigo-900/50 overflow-hidden">
+      <div className="relative border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-white p-6 sm:p-10 lg:p-14 shadow-sm border  overflow-hidden">
         {/* Background ambient glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -51,7 +51,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
             Curated Global Sanctuaries &{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-300">
+            <span className="text-indigo-600 dark:text-indigo-400">
               Overwater Retreats.
             </span>
           </h1>
@@ -62,7 +62,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
         </div>
 
         {/* Floating Search Form Card */}
-        <div className="relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/20 dark:border-slate-800 text-slate-900 dark:text-white">
+        <div className="relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-white/20 dark:border-slate-800 text-slate-900 dark:text-white">
           <HotelSearchForm onSearch={onSearch} />
         </div>
       </div>
@@ -86,7 +86,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
             <div
               key={idx}
               onClick={() => onQuickDestination(`${dest.city}, ${dest.country}`)}
-              className="relative h-64 rounded-3xl overflow-hidden shadow-xs hover:shadow-2xl border border-slate-200/80 dark:border-slate-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between p-5"
+              className="relative h-64 rounded-3xl overflow-hidden shadow-xs hover:shadow-sm border border-slate-200/80 dark:border-slate-800 transition-all duration-300 cursor-pointer group flex flex-col justify-between p-5"
             >
               <img
                 src={dest.image}
@@ -136,7 +136,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
             <div
               key={col.id}
               onClick={() => onQuickDestination(col.filterTag)}
-              className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer group flex flex-col justify-between space-y-4"
+              className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-sm hover:border-blue-500 transition-all cursor-pointer group flex flex-col justify-between space-y-4"
             >
               <div className="space-y-3">
                 <div className="relative h-36 rounded-2xl overflow-hidden">
@@ -195,7 +195,7 @@ export const HotelSearchPage: React.FC<HotelSearchPageProps> = ({
             <div
               key={hotel.id}
               onClick={() => onSelectHotel(hotel)}
-              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-2xl transition-all cursor-pointer group flex flex-col justify-between"
+              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="relative h-56 overflow-hidden">
